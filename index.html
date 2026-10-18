@@ -350,10 +350,11 @@
     }
 
     /* Count & Outs indicators */
+    /* Count & Outs indicators */
     .count-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
       margin-bottom: 12px;
     }
 
@@ -361,30 +362,37 @@
       background: rgba(255, 255, 255, 0.45);
       border: 2px solid #84572b;
       border-radius: 10px;
-      padding: 6px 10px;
+      padding: 6px 8px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
+      gap: 4px;
     }
 
     .count-label {
       font-family: var(--font-marker);
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       color: #3b200b;
+      letter-spacing: 0.5px;
     }
 
     .count-dots {
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
 
     .dot {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       background: #4a3420;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
       transition: all 0.2s ease;
+    }
+
+    .dot.ball-lit {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
     }
 
     .dot.strike-lit {
@@ -395,6 +403,82 @@
     .dot.out-lit {
       background: #ef4444;
       box-shadow: 0 0 8px #ef4444;
+    }
+
+    /* Authentic Batter Card */
+    .batter-card {
+      background: #dfb882;
+      background-image: 
+        radial-gradient(#c69a62 15%, transparent 16%),
+        radial-gradient(#c69a62 15%, transparent 16%);
+      background-size: 14px 14px;
+      background-position: 0 0, 7px 7px;
+      border: 3px solid #633f1a;
+      border-radius: 14px;
+      padding: 10px 14px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .batter-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 22px rgba(0, 0, 0, 0.55);
+    }
+
+    .batter-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .batter-badge {
+      font-family: var(--font-headline);
+      font-size: 0.76rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .batter-badge.rhb {
+      background: #1d4ed8;
+      color: #dbeafe;
+      border: 1px solid #3b82f6;
+    }
+
+    .batter-badge.lhb {
+      background: #be185d;
+      color: #fce7f3;
+      border: 1px solid #ec4899;
+    }
+
+    .batter-pos {
+      font-family: var(--font-headline);
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #553315;
+      background: rgba(255, 255, 255, 0.65);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .batter-name {
+      font-family: var(--font-marker);
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #2b1704;
+      line-height: 1.2;
+    }
+
+    .batter-desc {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #553315;
     }
 
     /* Diamond & Runners Graphic */
@@ -816,11 +900,11 @@
           <button class="pitch-btn" id="flickBatBtn" style="background: linear-gradient(135deg, #9333ea, #7e22ce); box-shadow: 0 4px 15px rgba(147, 51, 234, 0.45);" title="Hold to pull back rubberband, release to flick!">
             <span>⚡</span> FLICK BAT [F]
           </button>
-          <button class="icon-btn" id="autoPitchBtn" style="background: rgba(34, 197, 94, 0.22); border-color: #22c55e; color: #86efac; font-weight:700;" title="Toggle automatic continuous pitching">
-            <span>🔄</span> <span id="autoPitchLabel">Auto-Pitch: ON</span>
+          <button class="icon-btn" id="autoPitchBtn" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); color: #94a3b8; font-weight:700;" title="Toggle automatic continuous pitching">
+            <span>🔄</span> <span id="autoPitchLabel">Auto-Pitch: OFF</span>
           </button>
-          <button class="icon-btn" id="batterHandBtn" style="background: rgba(59, 130, 246, 0.22); border-color: #3b82f6; color: #93c5fd; font-weight:700;" title="Toggle Right-Handed or Left-Handed Batter [B]">
-            <span>🧢</span> <span id="batterHandLabel">Batter: Righty (RHB)</span>
+          <button class="icon-btn" id="batterHandBtn" style="background: rgba(59, 130, 246, 0.22); border-color: #3b82f6; color: #93c5fd; font-weight:700;" title="Switch batter in lineup [B]">
+            <span>🧢</span> <span id="batterHandLabel">Batter #1: Righty (RHB)</span>
           </button>
           <button class="icon-btn" id="nudgeBtn" title="Nudge the box if ball gets stuck">
             <span>👋</span> Nudge
@@ -830,9 +914,10 @@
         <div class="action-group">
           <label for="pitchModeSelect" style="font-size: 0.82rem; color: #94a3b8; font-weight: 600;">Pitch Mode:</label>
           <select id="pitchModeSelect" class="select-dropdown">
-            <option value="straight">Fastball (Straight)</option>
-            <option value="curve">Curveball (Spin)</option>
-            <option value="changeup">Changeup (Slow)</option>
+            <option value="random" selected>Pitcher's Choice (Random Mix)</option>
+            <option value="fastball">Fastball (Heater 95+ MPH)</option>
+            <option value="curve">Curveball (Sharp Break)</option>
+            <option value="changeup">Changeup (Slow Floater)</option>
             <option value="tee">Batting Tee (Stationary)</option>
           </select>
         </div>
@@ -875,8 +960,16 @@
           </tbody>
         </table>
 
-        <!-- Count & Outs Matrix -->
+        <!-- Count & Outs Matrix (Balls, Strikes, Outs) -->
         <div class="count-grid">
+          <div class="count-box">
+            <span class="count-label">BALLS</span>
+            <div class="count-dots">
+              <div class="dot" id="ball1"></div>
+              <div class="dot" id="ball2"></div>
+              <div class="dot" id="ball3"></div>
+            </div>
+          </div>
           <div class="count-box">
             <span class="count-label">STRIKES</span>
             <div class="count-dots">
@@ -906,6 +999,16 @@
         <div style="text-align: center; font-size: 0.85rem; font-weight: 800; color: #442a12;">
           INNING: <span id="inningDisplay" style="color: #922222;">BOTTOM 1st</span>
         </div>
+      </div>
+
+      <!-- Current Batter Card (Mix of RHB & LHB Sluggers) -->
+      <div class="batter-card" id="currentBatterCard" title="Click to cycle next batter in lineup [B]">
+        <div class="batter-card-header">
+          <span class="batter-badge rhb" id="batterBadge">#24 • RHB (Righty)</span>
+          <span class="batter-pos" id="batterPos">LF</span>
+        </div>
+        <div class="batter-name" id="batterName">Rickey Henderson</div>
+        <div class="batter-desc" id="batterDesc">Leadoff Speedster • AVG: .279</div>
       </div>
 
       <!-- Live Announcer & Radar Gun -->
@@ -1698,8 +1801,8 @@
         this.radius = 18;     // Preserved collision radius
         this.visualScale = 1.0;
 
-        this.x = HOME_PLATE.x;
-        this.y = HOME_PLATE.y;
+        this.x = PITCHER_MOUND.x;
+        this.y = PITCHER_MOUND.y;
         this.vx = 0;
         this.vy = 0;
         this.mass = 1.0;
@@ -1707,11 +1810,14 @@
         this.friction = 0.990;   // smooth rolling resistance
 
         this.inPlay = false;
+        this.waitingForPitch = true;
         this.settledInPocket = null;
         this.settleTimer = 0;
         this.trail = [];
         this.isPitched = false;
         this.inPitcherHole = false;
+        this.currentPitchSpeed = 310;
+        this.currentPitchType = 'fastball';
       }
 
       resetAtTee() {
@@ -1722,14 +1828,40 @@
         this.vx = 0;
         this.vy = 0;
         this.inPlay = true;
+        this.waitingForPitch = false;
         this.settledInPocket = null;
         this.settleTimer = 0;
         this.trail = [];
         this.isPitched = false;
         this.inPitcherHole = false;
+        this.currentPitchSpeed = 300;
+        this.currentPitchType = 'tee';
       }
 
-      pitchFromMound(mode = 'straight') {
+      resetAtMound() {
+        this.radius = this.baseRadius;
+        this.visualScale = 1.0;
+        this.x = PITCHER_MOUND.x;
+        this.y = PITCHER_MOUND.y;
+        this.vx = 0;
+        this.vy = 0;
+        this.inPlay = false;
+        this.waitingForPitch = true;
+        this.settledInPocket = null;
+        this.settleTimer = 0;
+        this.trail = [];
+        this.isPitched = false;
+        this.inPitcherHole = false;
+
+        // Reset bat from stick position if it was stuck
+        if (typeof game !== 'undefined' && game.bat && game.bat.isStuck) {
+          game.bat.isStuck = false;
+          game.bat.angle = game.bat.restAngle;
+          game.bat.targetAngle = game.bat.restAngle;
+        }
+      }
+
+      pitchFromMound(selectedMode = 'random') {
         this.radius = this.baseRadius;
         this.visualScale = 1.0;
         this.x = PITCHER_MOUND.x;
@@ -1739,29 +1871,60 @@
         this.settleTimer = 0;
         this.inPlay = true;
         this.isPitched = true;
+        this.waitingForPitch = false;
         this.trail = [];
 
-        // Target hitting zone right on home plate
-        const targetX = HOME_PLATE.x + (Math.random() * 10 - 5);
-        const targetY = HOME_PLATE.y + (Math.random() * 10 - 5);
+        // Reset bat stick if still stuck
+        if (typeof game !== 'undefined' && game.bat && game.bat.isStuck) {
+          game.bat.isStuck = false;
+          game.bat.angle = game.bat.restAngle;
+          game.bat.targetAngle = game.bat.restAngle;
+        }
+
+        let mode = selectedMode;
+        if (mode === 'random') {
+          const r = Math.random();
+          if (r < 0.40) mode = 'fastball';
+          else if (r < 0.72) mode = 'curve';
+          else mode = 'changeup';
+        }
+
+        this.currentPitchType = mode;
+
+        // Realistic pitcher target variance (strike zone vs painted corners)
+        const targetX = HOME_PLATE.x + (Math.random() * 20 - 10);
+        const targetY = HOME_PLATE.y + (Math.random() * 20 - 10);
         const dx = targetX - this.x;
         const dy = targetY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        let speed = 280; // pixels per sec
-        if (mode === 'changeup') speed = 185;
-        if (mode === 'straight') speed = 310;
+        let speed = 310;
+        if (mode === 'fastball') {
+          // Fast heater: 415 - 450 px/s (arrives in ~0.65s!)
+          speed = 415 + Math.random() * 35;
+          this.spin = (Math.random() - 0.5) * 40;
+        } else if (mode === 'curve') {
+          // Curveball break: 300 - 330 px/s with sharp spin
+          speed = 300 + Math.random() * 30;
+          this.spin = Math.random() > 0.5 ? 220 : -220;
+        } else if (mode === 'changeup') {
+          // Off-speed slow floater: 195 - 225 px/s (takes ~1.3s!)
+          speed = 195 + Math.random() * 30;
+          this.spin = (Math.random() - 0.5) * 60;
+        } else {
+          speed = 310;
+          this.spin = 0;
+        }
 
+        this.currentPitchSpeed = speed;
         this.vx = (dx / dist) * speed;
         this.vy = (dy / dist) * speed;
-
-        // Apply curve spin
-        this.spin = (mode === 'curve') ? (Math.random() > 0.5 ? 160 : -160) : 0;
 
         sounds.playPitchRoll();
       }
 
       subUpdate(subDt, bat) {
+        if (this.waitingForPitch) return;
         if (!this.inPlay && !this.inPitcherHole) return;
 
         // If ball is in pitcher's hole, animate fall visualScale only (NEVER mutate this.radius!)
@@ -1799,6 +1962,33 @@
         this.x += this.vx * subDt;
         this.y += this.vy * subDt;
 
+        // Check if unhit pitch crossed Home Plate (Called Strike or Ball)
+        if (this.isPitched && !this.inPitcherHole) {
+          const dx = this.x - PITCHER_MOUND.x;
+          const dy = this.y - PITCHER_MOUND.y;
+          // Progress along line from mound towards home plate
+          const progress = (dx - dy) * 0.70710678;
+          if (progress > 295) {
+            // Perpendicular offset from home plate center
+            const perpOffset = Math.abs((dx + dy) * 0.70710678);
+            const swung = bat.isDragging || Math.abs(bat.angularVel) > 2.5 || bat.isStuck;
+
+            this.isPitched = false;
+            this.inPlay = false;
+            this.vx = 0;
+            this.vy = 0;
+
+            if (swung) {
+              game.recordStrike("Swung and missed! Strike!");
+            } else if (perpOffset <= 38) {
+              game.recordStrike("Called Strike right in the zone!");
+            } else {
+              game.recordBall("Ball outside the strike zone!");
+            }
+            return;
+          }
+        }
+
         // Check if inside pocket tray -> STICK WHERE IT LANDS!
         this.checkPocketCapture(subDt);
 
@@ -1814,6 +2004,7 @@
       }
 
       postUpdate(dt) {
+        if (this.waitingForPitch) return;
         if (!this.inPlay && !this.inPitcherHole) return;
 
         // Maintain ball trail for visual juice
@@ -1878,10 +2069,21 @@
             let rawSpeed = Math.hypot(rawVx, rawVy);
             let rawAngle = Math.atan2(rawVy, rawVx);
 
-            // Add organic randomness to the swing arc (+- 6.5 degrees spray variance)
-            const sprayJitter = (Math.random() - 0.5) * 0.23; // radians
+            // Exit spray dynamics based on incoming pitch speed and timing:
+            // Fastball (415-450 px/s): arrives fast -> late contact -> pushes to OPPOSITE field
+            // Changeup (195-225 px/s): arrives slow -> early contact -> pulls to PULL field
+            // Medium / Curveball (300-330 px/s): centered contact -> drives straight to CENTER FIELD
+            const pSpeed = this.currentPitchSpeed || 305;
+            const speedFactor = (pSpeed - 305) / 305.0; // Fast: ~+0.42, Changeup: ~-0.35, Med: ~0.0
+
+            // RHB (bat.direction > 0): Fast pushes right (-angle), Slow pulls left (+angle)
+            // LHB (bat.direction < 0): Fast pushes left (+angle), Slow pulls right (-angle)
+            const speedTimingDeflection = -speedFactor * 0.32 * (bat.direction > 0 ? 1 : -1);
+
+            // Add organic randomness to the swing arc (+- 5 degrees variance)
+            const sprayJitter = (Math.random() - 0.5) * 0.18;
             const powerVar = 0.94 + Math.random() * 0.12;     // +- 6% exit velo
-            const finalAngle = rawAngle + sprayJitter;
+            const finalAngle = rawAngle + speedTimingDeflection + sprayJitter;
             const finalSpeed = rawSpeed * powerVar;
 
             this.vx = Math.cos(finalAngle) * finalSpeed;
@@ -1973,7 +2175,7 @@
 
       checkPitcherHole() {
         // If ball rolls over the center pitcher mound slot at moderate speed
-        if (this.isPitched) return; // Don't trap while rolling out of the hole!
+        if (this.isPitched || this.waitingForPitch) return;
 
         const dx = this.x - PITCHER_HOLE.x;
         const dy = this.y - PITCHER_HOLE.y;
@@ -1985,7 +2187,7 @@
 
         if (Math.abs(localX) < PITCHER_HOLE.width / 2 && Math.abs(localY) < PITCHER_HOLE.height / 2) {
           const speed = Math.hypot(this.vx, this.vy);
-          if (speed < 380) { // Sucked into hole
+          if (speed < 380 && !this.inPitcherHole) {
             this.inPitcherHole = true;
             this.inPlay = false;
             sounds.playPocket('out');
@@ -2087,13 +2289,45 @@
         ctx.arc(this.x + currentR * 0.25, this.y, currentR * 0.72, Math.PI * 0.65, Math.PI * 1.35);
         ctx.stroke();
 
+        // If resting on mound waiting for Space, render pulsing highlight and prompt
+        if (this.waitingForPitch) {
+          const pulse = 0.5 + Math.sin(Date.now() * 0.007) * 0.5;
+          ctx.strokeStyle = `rgba(248, 194, 51, ${0.4 + pulse * 0.5})`;
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, currentR + 7 + pulse * 4, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Prompt badge
+          ctx.font = '800 11px "Outfit", sans-serif';
+          ctx.fillStyle = '#fef08a';
+          ctx.textAlign = 'center';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+          ctx.shadowBlur = 6;
+          ctx.fillText('PRESS [SPACE] TO PITCH', this.x, this.y + 36);
+        }
+
         ctx.restore();
       }
     }
 
     /* =========================================================================
-       BASEBALL MATCH RULES, SCORING & STATE
+       BASEBALL MATCH RULES, SCORING & LINEUP STATE
        ========================================================================= */
+
+    const BATTING_LINEUP = [
+      { name: "Rickey Henderson", hand: "right", num: "24", pos: "LF", avg: ".279", desc: "Leadoff Speedster" },
+      { name: "Tony Gwynn", hand: "left", num: "19", pos: "RF", avg: ".338", desc: "Contact Legend" },
+      { name: "Babe Ruth", hand: "left", num: "3", pos: "DH", avg: ".342", desc: "The Great Bambino" },
+      { name: "Hank Aaron", hand: "right", num: "44", pos: "CF", avg: ".305", desc: "Home Run King" },
+      { name: "Ted Williams", hand: "left", num: "9", pos: "LF", avg: ".344", desc: "The Splendid Splinter" },
+      { name: "Willie Mays", hand: "right", num: "24", pos: "CF", avg: ".302", desc: "The Say Hey Kid" },
+      { name: "Stan Musial", hand: "left", num: "6", pos: "1B", avg: ".331", desc: "Stan the Man" },
+      { name: "Cal Ripken Jr.", hand: "right", num: "8", pos: "SS", avg: ".276", desc: "The Iron Man" },
+      { name: "Ken Griffey Jr.", hand: "left", num: "24", pos: "CF", avg: ".284", desc: "The Sweetest Swing" },
+    ];
 
     class BaseballGame {
       constructor() {
@@ -2105,6 +2339,7 @@
         this.currentInning = 1;
         this.isTopInning = false; // Player is HOME team, bats in bottom of inning
 
+        this.batterIndex = 0;
         this.outs = 0;
         this.strikes = 0;
         this.ballsCount = 0;
@@ -2133,8 +2368,117 @@
       }
 
       init() {
+        this.updateBatterUI();
+        this.bat.applyHandedness(BATTING_LINEUP[this.batterIndex].hand);
         this.updateUI();
-        this.ball.resetAtTee();
+        this.ball.resetAtMound();
+      }
+
+      advanceBatter() {
+        this.batterIndex = (this.batterIndex + 1) % BATTING_LINEUP.length;
+        const b = BATTING_LINEUP[this.batterIndex];
+        this.bat.applyHandedness(b.hand);
+        this.updateBatterUI();
+      }
+
+      updateBatterUI() {
+        const b = BATTING_LINEUP[this.batterIndex];
+        const badge = document.getElementById('batterBadge');
+        const pos = document.getElementById('batterPos');
+        const name = document.getElementById('batterName');
+        const desc = document.getElementById('batterDesc');
+        if (badge) {
+          badge.textContent = `#${b.num} • ${b.hand === 'right' ? 'RHB (Righty)' : 'LHB (Lefty)'}`;
+          badge.className = `batter-badge ${b.hand === 'right' ? 'rhb' : 'lhb'}`;
+        }
+        if (pos) pos.textContent = b.pos;
+        if (name) name.textContent = b.name;
+        if (desc) desc.textContent = `${b.desc} • AVG: ${b.avg}`;
+        updateBatterHandUI();
+      }
+
+      recordStrike(reason = "Strike!") {
+        this.strikes++;
+        sounds.playSnap();
+        if (this.strikes >= 3) {
+          this.outs++;
+          this.strikes = 0;
+          this.ballsCount = 0;
+          this.showBanner("STRIKEOUT!", "3 Strikes - You're Out!");
+          document.getElementById('statPlay').textContent = "Strikeout";
+          document.getElementById('announcerText').textContent = 
+            `STRIKEOUT! That's an OUT! (${this.outs} Out${this.outs > 1 ? 's' : ''})`;
+          this.updateUI();
+          if (this.outs >= 3) {
+            this.advanceInning();
+          } else {
+            this.advanceBatter();
+            this.prepareNextPitch(1500);
+          }
+        } else {
+          this.showBanner("STRIKE " + this.strikes, reason);
+          document.getElementById('announcerText').textContent = 
+            `${reason} Count: ${this.ballsCount} Ball${this.ballsCount !== 1 ? 's' : ''}, ${this.strikes} Strike${this.strikes !== 1 ? 's' : ''}. Press [SPACE]!`;
+          this.updateUI();
+          this.prepareNextPitch(1100);
+        }
+      }
+
+      recordBall(reason = "Ball outside the zone!") {
+        this.ballsCount++;
+        sounds.playWallBounce(1.4);
+        if (this.ballsCount >= 4) {
+          this.ballsCount = 0;
+          this.strikes = 0;
+          this.showBanner("WALK!", "Ball 4 - Take your base!");
+          document.getElementById('statPlay').textContent = "Walk";
+          this.advanceRunnersOnWalk();
+          document.getElementById('announcerText').textContent = 
+            "BALL FOUR! WALK! Batter takes 1st base!";
+          this.updateUI();
+          this.advanceBatter();
+          this.prepareNextPitch(1500);
+        } else {
+          this.showBanner("BALL " + this.ballsCount, reason);
+          document.getElementById('announcerText').textContent = 
+            `${reason} Count: ${this.ballsCount} Ball${this.ballsCount !== 1 ? 's' : ''}, ${this.strikes} Strike${this.strikes !== 1 ? 's' : ''}. Press [SPACE]!`;
+          this.updateUI();
+          this.prepareNextPitch(1100);
+        }
+      }
+
+      advanceRunnersOnWalk() {
+        if (this.runners[0]) {
+          if (this.runners[1]) {
+            if (this.runners[2]) {
+              this.addRuns(1);
+            }
+            this.runners[2] = true;
+          }
+          this.runners[1] = true;
+        }
+        this.runners[0] = true;
+      }
+
+      prepareNextPitch(delayMs = 1400) {
+        setTimeout(() => {
+          if (!this.gameOver) {
+            const mode = document.getElementById('pitchModeSelect').value;
+            if (mode === 'tee') {
+              this.ball.resetAtTee();
+            } else if (autoPitchEnabled) {
+              this.ball.pitchFromMound(mode);
+              const b = BATTING_LINEUP[this.batterIndex];
+              document.getElementById('announcerText').textContent = 
+                `Pitch rolling in to ${b.name}! Time your swing!`;
+            } else {
+              this.ball.resetAtMound();
+              const b = BATTING_LINEUP[this.batterIndex];
+              document.getElementById('announcerText').textContent = 
+                `Pitch waiting on mound for ${b.name} (${b.hand === 'right' ? 'RHB' : 'LHB'}). Press [SPACE] or click PITCH!`;
+            }
+          }
+        }, delayMs);
       }
 
       onBatHit(speed) {
@@ -2160,6 +2504,7 @@
           this.homeHits++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
+          this.ballsCount = 0;
 
           announcement = (runsScoredThisPlay === 4) 
             ? "GRAND SLAM HOME RUN!! BASES CLEARED!!" 
@@ -2167,6 +2512,7 @@
           
           this.showBanner("HOME RUN!", announcement);
           this.createConfetti(100);
+          this.advanceBatter();
 
         } else if (outcomeType === 'triple') {
           // 3rd Base Hit
@@ -2175,8 +2521,10 @@
           this.homeHits++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
+          this.ballsCount = 0;
           announcement = `STAND-UP TRIPLE! ${runsScoredThisPlay > 0 ? runsScoredThisPlay + ' Run(s) in!' : 'Runner on 3rd!'}`;
           this.showBanner("TRIPLE!", "Smoked off the yellow divider!");
+          this.advanceBatter();
 
         } else if (outcomeType === 'double') {
           // 2nd Base Hit: advance runners 2 bases
@@ -2188,8 +2536,10 @@
           this.homeHits++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
+          this.ballsCount = 0;
           announcement = `DOUBLE INTO THE GAP! ${runsScoredThisPlay > 0 ? runsScoredThisPlay + ' Run(s) scored!' : 'Runner on 2nd!'}`;
           this.showBanner("DOUBLE!", "Solid shot into the purple pocket!");
+          this.advanceBatter();
 
         } else if (outcomeType === 'single') {
           // 1st Base Hit: advance runners 1 base
@@ -2200,8 +2550,10 @@
           this.homeHits++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
+          this.ballsCount = 0;
           announcement = `BASE HIT SINGLE! ${runsScoredThisPlay > 0 ? 'Run scored from 3rd!' : 'Runner on 1st.'}`;
           this.showBanner("SINGLE!", "Sharp liner into orange pocket!");
+          this.advanceBatter();
 
         } else if (outcomeType === 'foul') {
           // Foul ball
@@ -2216,6 +2568,7 @@
           // Out or Pitcher's hole
           this.outs++;
           this.strikes = 0;
+          this.ballsCount = 0;
           announcement = (outcomeType === 'pitcher_out')
             ? "Caught by the pitcher in the mound slot! OUT!"
             : "Ball settled in the Out pocket! That's an OUT!";
@@ -2224,31 +2577,16 @@
           if (this.outs >= 3) {
             this.advanceInning();
             return;
+          } else {
+            this.advanceBatter();
           }
         }
 
         document.getElementById('announcerText').textContent = announcement;
         this.updateUI();
 
-        // Prepare ball for next play after brief pause
-        setTimeout(() => {
-          if (!this.gameOver) {
-            const mode = document.getElementById('pitchModeSelect').value;
-            if (mode === 'tee') {
-              this.ball.resetAtTee();
-            } else if (autoPitchEnabled) {
-              this.ball.pitchFromMound(mode);
-              document.getElementById('announcerText').textContent = 
-                `New pitch rolling in! (${mode.toUpperCase()}) Time your swing!`;
-            } else {
-              this.ball.x = -100;
-              this.ball.y = -100;
-              this.ball.inPlay = false;
-              document.getElementById('announcerText').textContent = 
-                "Press [PITCH] or Spacebar for next pitch!";
-            }
-          }
-        }, 1600);
+        // Prepare ball for next play
+        this.prepareNextPitch(1600);
       }
 
       addRuns(qty) {
@@ -2261,6 +2599,7 @@
       advanceInning() {
         this.outs = 0;
         this.strikes = 0;
+        this.ballsCount = 0;
         this.runners = [false, false, false];
 
         // Simulate CPU Away team's half inning
@@ -2281,8 +2620,11 @@
           document.getElementById('announcerText').textContent = msg;
         } else {
           this.currentInning++;
+          this.advanceBatter();
+          const b = BATTING_LINEUP[this.batterIndex];
           document.getElementById('announcerText').textContent = 
-            `End of Inning. Visitors score ${cpuRunsThisInning}. Now batting Bottom of ${this.currentInning}!`;
+            `End of Inning. Visitors score ${cpuRunsThisInning}. Bottom ${this.currentInning}, ${b.name} (${b.hand.toUpperCase()}) up! Press [SPACE]!`;
+          this.prepareNextPitch(1800);
         }
 
         this.updateUI();
@@ -2357,14 +2699,19 @@
         document.getElementById('v2').textContent = this.currentInning >= 2 ? (this.inningScores.visitor[1] ?? 0) : '-';
         document.getElementById('v3').textContent = this.currentInning >= 3 ? (this.inningScores.visitor[2] ?? 0) : '-';
 
-        // Outs
-        document.getElementById('out1').classList.toggle('out-lit', this.outs >= 1);
-        document.getElementById('out2').classList.toggle('out-lit', this.outs >= 2);
-        document.getElementById('out3').classList.toggle('out-lit', this.outs >= 3);
+        // Balls
+        document.getElementById('ball1').classList.toggle('ball-lit', this.ballsCount >= 1);
+        document.getElementById('ball2').classList.toggle('ball-lit', this.ballsCount >= 2);
+        document.getElementById('ball3').classList.toggle('ball-lit', this.ballsCount >= 3);
 
         // Strikes
         document.getElementById('strike1').classList.toggle('strike-lit', this.strikes >= 1);
         document.getElementById('strike2').classList.toggle('strike-lit', this.strikes >= 2);
+
+        // Outs
+        document.getElementById('out1').classList.toggle('out-lit', this.outs >= 1);
+        document.getElementById('out2').classList.toggle('out-lit', this.outs >= 2);
+        document.getElementById('out3').classList.toggle('out-lit', this.outs >= 3);
 
         // Runners on base nodes
         document.getElementById('node1st').classList.toggle('active-runner', this.runners[0]);
@@ -2379,6 +2726,7 @@
         this.currentInning = 1;
         this.outs = 0;
         this.strikes = 0;
+        this.ballsCount = 0;
         this.homeRuns = 0;
         this.visitorRuns = 0;
         this.homeHits = 0;
@@ -2386,9 +2734,14 @@
         this.runners = [false, false, false];
         this.inningScores = { visitor: [0, 0, 0], home: [0, 0, 0] };
         this.gameOver = false;
-        this.ball.resetAtTee();
+        this.batterIndex = 0;
+        this.bat.applyHandedness(BATTING_LINEUP[0].hand);
+        this.updateBatterUI();
+        this.ball.resetAtMound();
         this.updateUI();
-        document.getElementById('announcerText').textContent = "New Game! Batter up! Pull back the bat to swing.";
+        const b = BATTING_LINEUP[0];
+        document.getElementById('announcerText').textContent = 
+          `New Game! ${b.name} (${b.hand.toUpperCase()}) steps into the box! Press [SPACE] or click PITCH!`;
       }
     }
 
@@ -2849,18 +3202,18 @@
 
     function toggleBatterHand() {
       sounds.init();
-      const newHand = game.bat.hand === 'right' ? 'left' : 'right';
-      game.bat.applyHandedness(newHand);
-      updateBatterHandUI();
-      const label = newHand === 'right' ? "Right-handed slugger (RHB)" : "Left-handed pull hitter (LHB)";
-      document.getElementById('announcerText').textContent = `Now batting: ${label}! Stepping into the box!`;
+      game.advanceBatter();
+      const b = BATTING_LINEUP[game.batterIndex];
+      document.getElementById('announcerText').textContent = 
+        `Now stepping into the box: #${b.num} ${b.name} (${b.hand === 'right' ? 'RHB' : 'LHB'})! Press [SPACE] to pitch!`;
       if (game.ball && !game.ball.isPitched) {
-        game.ball.resetAtTee();
+        game.ball.resetAtMound();
       }
     }
 
     function updateBatterHandUI() {
-      const isRight = game.bat.hand === 'right';
+      const b = BATTING_LINEUP[game.batterIndex];
+      const isRight = b.hand === 'right';
       const btn = document.getElementById('batterHandBtn');
       const label = document.getElementById('batterHandLabel');
       if (btn && label) {
@@ -2868,18 +3221,19 @@
           btn.style.background = 'rgba(59, 130, 246, 0.22)';
           btn.style.borderColor = '#3b82f6';
           btn.style.color = '#93c5fd';
-          label.textContent = 'Batter: Righty (RHB)';
+          label.textContent = `Batter #${b.num}: Righty (RHB)`;
         } else {
           btn.style.background = 'rgba(236, 72, 153, 0.22)';
           btn.style.borderColor = '#ec4899';
           btn.style.color = '#f472b6';
-          label.textContent = 'Batter: Lefty (LHB)';
+          label.textContent = `Batter #${b.num}: Lefty (LHB)`;
         }
       }
     }
 
     function triggerPitch() {
       sounds.init();
+      if (game.ball.inPlay && !game.ball.waitingForPitch) return; // Prevent double trigger
       const mode = document.getElementById('pitchModeSelect').value;
       if (mode === 'tee') {
         game.ball.resetAtTee();
@@ -2887,8 +3241,10 @@
           "Ball placed on Batting Tee! Pull back the bat and flick!";
       } else {
         game.ball.pitchFromMound(mode);
+        const b = BATTING_LINEUP[game.batterIndex];
+        const pitchName = game.ball.currentPitchType.toUpperCase();
         document.getElementById('announcerText').textContent = 
-          `Pitch is on the way! (${mode.toUpperCase()}) Time your swing!`;
+          `Pitch is on the way to ${b.name}! (${pitchName}) Time your swing!`;
       }
     }
 
@@ -2908,6 +3264,7 @@
 
     document.getElementById('pitchBtn').addEventListener('click', triggerPitch);
     document.getElementById('batterHandBtn').addEventListener('click', toggleBatterHand);
+    document.getElementById('currentBatterCard').addEventListener('click', toggleBatterHand);
     document.getElementById('nudgeBtn').addEventListener('click', nudgeBox);
 
     // Flick Bat button (Hold to pull back rubberband, release to snap!)
@@ -2957,11 +3314,13 @@
     document.getElementById('pitchModeSelect').addEventListener('change', (e) => {
       if (e.target.value === 'tee') {
         game.ball.resetAtTee();
+      } else if (game.ball.waitingForPitch) {
+        game.ball.resetAtMound();
       }
     });
 
-    // Auto-Pitch toggle state
-    let autoPitchEnabled = true;
+    // Auto-Pitch toggle state (Default to OFF so pitch waits until Space is pressed)
+    let autoPitchEnabled = false;
     const autoPitchBtn = document.getElementById('autoPitchBtn');
     const autoPitchLabel = document.getElementById('autoPitchLabel');
     if (autoPitchBtn && autoPitchLabel) {
@@ -2970,6 +3329,7 @@
         autoPitchLabel.textContent = `Auto-Pitch: ${autoPitchEnabled ? 'ON' : 'OFF'}`;
         autoPitchBtn.style.borderColor = autoPitchEnabled ? '#22c55e' : 'rgba(255,255,255,0.2)';
         autoPitchBtn.style.color = autoPitchEnabled ? '#86efac' : '#94a3b8';
+        autoPitchBtn.style.background = autoPitchEnabled ? 'rgba(34, 197, 94, 0.22)' : 'rgba(255, 255, 255, 0.08)';
         if (autoPitchEnabled && !game.ball.inPlay) {
           triggerPitch();
         }
@@ -2993,16 +3353,9 @@
       if (overlay) overlay.classList.add('hidden');
       game.reset();
       game.showBanner("PLAY BALL!", "Bottom 1st Inning • Batter Up!");
+      const b = BATTING_LINEUP[game.batterIndex];
       document.getElementById('announcerText').textContent = 
-        "PLAY BALL! Pull the rubberband bat back to flick! First pitch is rolling in!";
-      setTimeout(() => {
-        const mode = document.getElementById('pitchModeSelect').value;
-        if (mode === 'tee') {
-          game.ball.resetAtTee();
-        } else {
-          game.ball.pitchFromMound(mode);
-        }
-      }, 900);
+        `PLAY BALL! ${b.name} (${b.hand.toUpperCase()}) up to bat! Press [SPACE] or click PITCH to throw!`;
     }
 
     document.getElementById('bigStartBtn').addEventListener('click', startGame);
