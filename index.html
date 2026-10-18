@@ -1413,6 +1413,7 @@
         }
 
         if (this.isDragging) {
+          this.isStuck = false;
           // Smoothly track user's drag target
           const diff = this.targetAngle - this.angle;
           this.angularVel = diff * 45;
@@ -1422,8 +1423,14 @@
           } else {
             this.tension = Math.max(0, Math.min(1, (this.angle - this.restAngle) / (this.minAngle - this.restAngle)));
           }
+        } else if (this.isStuck) {
+          // Bat STICKS where it lands at the follow-through stopper!
+          this.angle = this.maxAngle;
+          this.angularVel = 0;
+          this.angularAccel = 0;
+          this.tension = 0;
         } else {
-          // Rubber band spring acceleration through the plate
+          // Rubber band spring acceleration through the plate with subtle organic flutter
           let springTorque = 0;
           if (this.direction > 0) {
             // RHB: clockwise swing
@@ -1432,7 +1439,7 @@
               springTorque = this.springK * Math.pow(pullDeflection, 1.15);
               this.tension = Math.max(0, Math.min(1, pullDeflection / (this.restAngle - this.minAngle)));
             } else {
-              springTorque = -this.springK * 0.8 * (this.angle - this.restAngle);
+              springTorque = this.springK * 0.35;
               this.tension = 0;
             }
           } else {
@@ -1442,7 +1449,7 @@
               springTorque = -this.springK * Math.pow(pullDeflection, 1.15);
               this.tension = Math.max(0, Math.min(1, pullDeflection / (this.minAngle - this.restAngle)));
             } else {
-              springTorque = this.springK * 0.8 * (this.restAngle - this.angle);
+              springTorque = -this.springK * 0.35;
               this.tension = 0;
             }
           }
@@ -1454,19 +1461,17 @@
           this.angularVel += this.angularAccel * subDt;
           this.angle += this.angularVel * subDt;
 
-          // Impact with forward cardboard stopper!
+          // Impact with forward cardboard stopper -> Bat STICKS where it lands!
           if (this.direction > 0) {
             if (this.angle >= this.maxAngle) {
               this.angle = this.maxAngle;
-              if (this.angularVel > 6) {
-                this.flutterAmp = Math.min(0.08, this.angularVel * 0.002);
-                this.flutterTime = 0.20;
-                this.angularVel = -this.angularVel * 0.25;
-                sounds.playWallBounce(2.2);
-                sounds.playSnap();
-              } else {
-                this.angularVel = 0;
-              }
+              this.angularVel = 0;
+              this.angularAccel = 0;
+              this.isStuck = true; // Sticks at finish!
+              this.flutterAmp = 0.05;
+              this.flutterTime = 0.12;
+              sounds.playWallBounce(2.2);
+              sounds.playSnap();
             }
             if (this.angle < this.minAngle) {
               this.angle = this.minAngle;
@@ -1475,15 +1480,13 @@
           } else {
             if (this.angle <= this.maxAngle) {
               this.angle = this.maxAngle;
-              if (this.angularVel < -6) {
-                this.flutterAmp = Math.min(0.08, -this.angularVel * 0.002);
-                this.flutterTime = 0.20;
-                this.angularVel = -this.angularVel * 0.25;
-                sounds.playWallBounce(2.2);
-                sounds.playSnap();
-              } else {
-                this.angularVel = 0;
-              }
+              this.angularVel = 0;
+              this.angularAccel = 0;
+              this.isStuck = true; // Sticks at finish!
+              this.flutterAmp = 0.05;
+              this.flutterTime = 0.12;
+              sounds.playWallBounce(2.2);
+              sounds.playSnap();
             }
             if (this.angle > this.minAngle) {
               this.angle = this.minAngle;
@@ -1771,13 +1774,20 @@
           return;
         }
 
-        // Apply curve spin acceleration
-        if (this.spin && this.isPitched) {
+        // Apply curve spin acceleration in flight
+        if (this.spin && Math.abs(this.spin) > 8) {
           const speed = Math.hypot(this.vx, this.vy);
           if (speed > 40) {
             this.vx += (-this.vy / speed) * this.spin * subDt;
             this.vy += (this.vx / speed) * this.spin * subDt;
+            this.spin *= Math.pow(0.96, subDt * 60);
           }
+        }
+
+        // Corrugated cardboard micro-fluting deflection
+        if (this.inPlay && !this.settledInPocket) {
+          this.vy += Math.sin(this.y * 0.35) * 6.0 * subDt;
+          this.vx += Math.cos(this.x * 0.35) * 6.0 * subDt;
         }
 
         // Rolling friction damping
@@ -1789,17 +1799,18 @@
         this.x += this.vx * subDt;
         this.y += this.vy * subDt;
 
+        // Check if inside pocket tray -> STICK WHERE IT LANDS!
+        this.checkPocketCapture(subDt);
+
         // Check collision with bat
         this.checkBatCollision(bat);
 
-        // Check collisions with cardboard pocket dividers
-        this.checkDividersCollision();
-
-        // Check boundary walls
-        this.checkWallCollisions();
-
-        // Check pitcher hole trap
-        this.checkPitcherHole();
+        // Check collisions with cardboard pocket dividers & walls if still rolling
+        if (!this.settledInPocket) {
+          this.checkDividersCollision();
+          this.checkWallCollisions();
+          this.checkPitcherHole();
+        }
       }
 
       postUpdate(dt) {
@@ -1857,12 +1868,27 @@
 
           // If moving towards each other, resolve impact impulse
           if (velAlongNormal < 0) {
-            const restitution = 0.88; // Crisp pop off silver duct tape
+            // Realistic cardboard / duct-tape pop with subtle spring & sweet-spot randomness
+            const restitution = 0.84 + Math.random() * 0.08;
             const impulse = -(1 + restitution) * velAlongNormal * 0.18;
 
-            // Direct momentum transfer along collision normal + forward bat speed
-            this.vx += nx * impulse + bvx * 0.08;
-            this.vy += ny * impulse + bvy * 0.08;
+            // Raw velocity along normal + forward bat speed
+            let rawVx = nx * impulse + bvx * 0.08;
+            let rawVy = ny * impulse + bvy * 0.08;
+            let rawSpeed = Math.hypot(rawVx, rawVy);
+            let rawAngle = Math.atan2(rawVy, rawVx);
+
+            // Add organic randomness to the swing arc (+- 6.5 degrees spray variance)
+            const sprayJitter = (Math.random() - 0.5) * 0.23; // radians
+            const powerVar = 0.94 + Math.random() * 0.12;     // +- 6% exit velo
+            const finalAngle = rawAngle + sprayJitter;
+            const finalSpeed = rawSpeed * powerVar;
+
+            this.vx = Math.cos(finalAngle) * finalSpeed;
+            this.vy = Math.sin(finalAngle) * finalSpeed;
+
+            // Impart dynamic spin for aerodynamic trajectory curve
+            this.spin = (Math.random() - 0.5) * 260;
 
             // Cap max ball speed to ensure reliable boundary collision without tunneling
             const hitSpeed = Math.hypot(this.vx, this.vy);
@@ -1973,33 +1999,38 @@
 
         const speed = Math.hypot(this.vx, this.vy);
 
-        // Check if inside any pocket bounds
+        // Check if inside any pocket bounds -> STICK WHERE IT LANDS!
         for (const pocket of pockets) {
           const b = pocket.bounds;
           if (this.x >= b.x1 && this.x <= b.x2 && this.y >= b.y1 && this.y <= b.y2) {
-            // If ball slows down or stays in pocket for a moment, settle it
-            if (speed < 90) {
-              this.settleTimer += dt;
-              if (this.settleTimer > 0.22) {
-                this.settledInPocket = pocket;
-                this.inPlay = false;
-                this.vx = 0;
-                this.vy = 0;
-                sounds.playPocket(pocket.type);
-                game.handleOutcome(pocket.type, pocket.name);
-                break;
-              }
+            // Rapidly damp momentum upon landing in cardboard pocket tray
+            this.vx *= 0.45;
+            this.vy *= 0.45;
+            this.visualScale = Math.max(0.88, this.visualScale - 0.04);
+            this.settleTimer += dt;
+
+            // Stick where it lands!
+            if (this.settleTimer > 0.06 || speed < 120) {
+              this.settledInPocket = pocket;
+              this.inPlay = false;
+              this.vx = 0;
+              this.vy = 0;
+              sounds.playPocket(pocket.type);
+              game.handleOutcome(pocket.type, pocket.name);
+              return;
             }
           }
         }
 
-        // If ball completely stopped on the field (dead ball / infield play)
-        if (this.inPlay && speed < 1.5 && !this.isPitched) {
+        // If ball completely stopped on the diamond (dead ball / infield play)
+        if (this.inPlay && speed < 32 && !this.isPitched) {
           this.settleTimer += dt;
-          if (this.settleTimer > 0.8) {
+          if (this.settleTimer > 0.25) {
             this.inPlay = false;
+            this.vx = 0;
+            this.vy = 0;
             // Check if foul or infield grounder
-            if (this.x > HOME_PLATE.x - 60 && this.y < HOME_PLATE.y + 60) {
+            if (this.x > HOME_PLATE.x - 70 && this.y < HOME_PLATE.y + 70) {
               sounds.playPocket('out');
               game.handleOutcome('foul', 'Foul Ball');
             } else {
@@ -2713,6 +2744,7 @@
       const inBatZone = (pos.x > 450 && pos.x < 890 && pos.y > 20 && pos.y < 460);
 
       if (dTip < 130 || dPivot < 210 || inBatZone) {
+        game.bat.isStuck = false; // unstick on grab!
         game.bat.isDragging = true;
         canvas.classList.add('dragging');
         onPointerMove(evt);
@@ -2755,8 +2787,9 @@
       if (game.bat.isDragging) {
         game.bat.isDragging = false;
         canvas.classList.remove('dragging');
-        // Initial release triggers snappy whip snap!
         game.bat.angularVel = 0;
+        // Randomize slight rubberband tension snap variance (+- 7%)
+        game.bat.springK = 460.0 * (0.93 + Math.random() * 0.14);
         sounds.playSnap();
       }
     }
@@ -2785,6 +2818,7 @@
       } else if (e.code === 'ArrowDown' || e.code === 'KeyS' || e.code === 'KeyF') {
         // Pull back bat via key (Hold to pull, release to flick)
         e.preventDefault();
+        game.bat.isStuck = false; // unstick on key pull!
         game.bat.isDragging = true;
         if (game.bat.direction > 0) {
           game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.08);
@@ -2883,6 +2917,7 @@
     function startFlickPull(evt) {
       if (evt) evt.preventDefault();
       sounds.init();
+      game.bat.isStuck = false; // unstick on pull!
       game.bat.isDragging = true;
       if (flickPullInterval) clearInterval(flickPullInterval);
       flickPullInterval = setInterval(() => {
@@ -2909,6 +2944,7 @@
       if (game.bat.isDragging) {
         game.bat.isDragging = false;
         game.bat.angularVel = 0;
+        game.bat.springK = 460.0 * (0.93 + Math.random() * 0.14);
         sounds.playSnap();
       }
     }
