@@ -694,10 +694,13 @@
       <div class="board-toolbar">
         <div class="action-group">
           <button class="pitch-btn" id="pitchBtn" title="Roll ball from the pitcher's mound">
-            <span>⚾</span> PITCH BALL [Space]
+            <span>⚾</span> PITCH [Space]
+          </button>
+          <button class="pitch-btn" id="flickBatBtn" style="background: linear-gradient(135deg, #9333ea, #7e22ce); box-shadow: 0 4px 15px rgba(147, 51, 234, 0.45);" title="Hold to pull back rubberband, release to flick!">
+            <span>⚡</span> FLICK BAT [F]
           </button>
           <button class="icon-btn" id="nudgeBtn" title="Nudge the box if ball gets stuck">
-            <span>👋</span> Nudge Box
+            <span>👋</span> Nudge
           </button>
         </div>
 
@@ -1156,101 +1159,129 @@
 
     /* =========================================================================
        RUBBERBAND BAT MECHANISM
+       Modeled after sp    /* =========================================================================
+       RUBBERBAND BAT MECHANISM
        Modeled after specs/flick_bball.jpeg:
        Cardboard bat wrapped in silver duct tape, pivoting near the top-right
        corner of the box, with a purple rubber band looped to an anchor screw.
+       Pulling back builds elastic spring tension. Releasing delivers a violent,
+       satisfying snap with realistic stopper rebound and vibration flutter!
        ========================================================================= */
 
     class RubberbandBat {
       constructor() {
         // Pivot location: tucked in corner just outside home plate
-        this.pivot = { x: HOME_PLATE.x + 40, y: HOME_PLATE.y - 50 };
+        this.pivot = { x: HOME_PLATE.x + 38, y: HOME_PLATE.y - 48 };
         // Screw anchor location: drilled into cardboard below home plate
-        this.screw = { x: HOME_PLATE.x - 20, y: HOME_PLATE.y + 115 };
+        this.screw = { x: HOME_PLATE.x - 25, y: HOME_PLATE.y + 125 };
 
-        this.length = 160;
+        this.length = 165;
         this.width = 24;
-        this.mass = 1.8;
+        this.mass = 0.75; // light cardboard bat for ultra-snappy whip acceleration
 
-        // Angle in radians (0 is right, PI/2 is down, PI is left)
-        // Resting position: bat points down-left across the hitting zone
-        this.restAngle = Math.PI * 0.62;
-        // Pulled back against rubber band (pointing up-right)
-        this.minAngle = Math.PI * 0.18;
+        // Resting position against forward cardboard stopper (across home plate)
+        this.restAngle = Math.PI * 0.72; // ~130 deg
+        // Pulled back against rubber band (near right wall)
+        this.minAngle = Math.PI * 0.12;  // ~21 deg
         // Forward stop (physical cardboard limit)
-        this.maxAngle = Math.PI * 0.96;
+        this.maxAngle = Math.PI * 0.75;  // ~135 deg
 
         this.angle = this.restAngle;
         this.angularVel = 0;
         this.angularAccel = 0;
 
-        // Elastic spring constant and damping
-        this.springK = 850.0;
-        this.damping = 18.0;
+        // Massive spring torque constant for an explosive rubber band snap!
+        this.springK = 5200.0;
+        this.damping = 4.2; // low swing damping for fast whip speed
 
         this.isDragging = false;
         this.targetAngle = this.restAngle;
+        this.tension = 0; // 0 (rest) to 1 (full pull)
 
         // Rubberband attachment point along bat from pivot
-        this.bandAttachmentDist = 85;
+        this.bandAttachmentDist = 88;
+
+        // Cardboard stopper rebound flutter (the "TWANG" oscillation)
+        this.flutterTime = 0;
+        this.flutterAmp = 0;
       }
 
       getTip() {
+        const drawAngle = this.getEffectiveAngle();
         return {
-          x: this.pivot.x + Math.cos(this.angle) * this.length,
-          y: this.pivot.y + Math.sin(this.angle) * this.length
+          x: this.pivot.x + Math.cos(drawAngle) * this.length,
+          y: this.pivot.y + Math.sin(drawAngle) * this.length
         };
       }
 
       getBandBatPoint() {
+        const drawAngle = this.getEffectiveAngle();
         return {
-          x: this.pivot.x + Math.cos(this.angle) * this.bandAttachmentDist,
-          y: this.pivot.y + Math.sin(this.angle) * this.bandAttachmentDist
+          x: this.pivot.x + Math.cos(drawAngle) * this.bandAttachmentDist,
+          y: this.pivot.y + Math.sin(drawAngle) * this.bandAttachmentDist
         };
       }
 
+      getEffectiveAngle() {
+        // Add elastic flutter vibration when bat snaps against the stopper
+        if (this.flutterTime > 0) {
+          const vibe = Math.sin(this.flutterTime * 95) * this.flutterAmp;
+          return this.angle + vibe;
+        }
+        return this.angle;
+      }
+
       updatePhysics(subDt) {
+        // Update vibration decay
+        if (this.flutterTime > 0) {
+          this.flutterTime -= subDt;
+          this.flutterAmp *= Math.pow(0.15, subDt * 20);
+          if (this.flutterTime <= 0) {
+            this.flutterTime = 0;
+            this.flutterAmp = 0;
+          }
+        }
+
         if (this.isDragging) {
-          // Smooth spring tracking to user's drag pointer
+          // Smoothly track user's drag target
           const diff = this.targetAngle - this.angle;
-          this.angularVel = diff * 32;
+          this.angularVel = diff * 45;
           this.angle += this.angularVel * subDt;
+          this.tension = Math.max(0, Math.min(1, (this.restAngle - this.angle) / (this.restAngle - this.minAngle)));
         } else {
-          // Accurate physical rubber band spring force & torque
-          const bandPt = this.getBandBatPoint();
-          const dx = this.screw.x - bandPt.x;
-          const dy = this.screw.y - bandPt.y;
-          const currentBandLen = Math.hypot(dx, dy);
-          const restBandLen = 70; // unstretched rubberband length
-
+          // Accurate rubber band spring acceleration
+          // When pulled back (angle < restAngle), the rubberband exerts huge forward torque!
           let springTorque = 0;
-          if (currentBandLen > restBandLen) {
-            // Hooke's Law + quadratic non-linear rubber elasticity
-            const stretch = currentBandLen - restBandLen;
-            const tension = this.springK * stretch * (1 + stretch * 0.015);
-            const fx = (dx / currentBandLen) * tension;
-            const fy = (dy / currentBandLen) * tension;
-
-            // Moment arm from pivot: r = bandPt - pivot
-            const rx = bandPt.x - this.pivot.x;
-            const ry = bandPt.y - this.pivot.y;
-            // 2D torque: rx * fy - ry * fx
-            springTorque = rx * fy - ry * fx;
+          if (this.angle < this.restAngle) {
+            const pullDeflection = this.restAngle - this.angle;
+            // Progressive non-linear rubberband tension: accelerates faster as it contracts
+            springTorque = this.springK * Math.pow(pullDeflection, 1.25);
+            this.tension = Math.max(0, Math.min(1, pullDeflection / (this.restAngle - this.minAngle)));
+          } else {
+            // Gentle stopper resistance if pushed beyond rest
+            springTorque = -this.springK * 0.4 * (this.angle - this.restAngle);
+            this.tension = 0;
           }
 
-          // Damping torque opposing motion
+          // Damping opposes velocity
           const dampingTorque = -this.damping * this.angularVel;
           this.angularAccel = (springTorque + dampingTorque) / this.mass;
 
           this.angularVel += this.angularAccel * subDt;
           this.angle += this.angularVel * subDt;
 
-          // Forward physical stopper
-          if (this.angle > this.maxAngle) {
+          // Impact with forward cardboard stopper!
+          if (this.angle >= this.maxAngle) {
             this.angle = this.maxAngle;
-            if (this.angularVel > 0) {
-              this.angularVel = -this.angularVel * 0.25; // cardboard stopper rebound
-              sounds.playWallBounce(2.0);
+            if (this.angularVel > 8) {
+              // Rebound bounce + trigger twang flutter
+              this.flutterAmp = Math.min(0.08, this.angularVel * 0.002);
+              this.flutterTime = 0.20;
+              this.angularVel = -this.angularVel * 0.32;
+              sounds.playWallBounce(2.5);
+              sounds.playSnap();
+            } else {
+              this.angularVel = 0;
             }
           }
 
@@ -1263,53 +1294,61 @@
       }
 
       draw(ctx) {
+        const drawAngle = this.getEffectiveAngle();
         const tip = this.getTip();
         const bandPt = this.getBandBatPoint();
 
         // 1. Draw Purple Rubberband
         ctx.save();
         const stretchDist = Math.hypot(bandPt.x - this.screw.x, bandPt.y - this.screw.y);
-        const bandThickness = Math.max(3.5, 9 - (stretchDist - 70) * 0.035);
-        const strainRatio = Math.min(1.0, Math.max(0, (stretchDist - 70) / 160));
+        const restLen = 65;
+        const stretchRatio = Math.max(0, (stretchDist - restLen) / 140);
+        // Rubberband gets thinner as it stretches
+        const bandThickness = Math.max(3.2, 8.5 - stretchRatio * 4.5);
 
         // Rubberband drop shadow
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.38)';
         ctx.lineWidth = bandThickness + 3;
         ctx.beginPath();
         ctx.moveTo(this.screw.x + 4, this.screw.y + 6);
         ctx.lineTo(bandPt.x + 4, bandPt.y + 6);
         ctx.stroke();
 
-        // Rubberband body: purple transitioning to magenta under strain
-        const rVal = Math.round(135 + strainRatio * 85);
-        const gVal = Math.round(55 - strainRatio * 25);
-        const bVal = Math.round(180 + strainRatio * 45);
+        // Rubberband body: purple transitioning to bright strained magenta under high pull
+        const rVal = Math.round(135 + stretchRatio * 110);
+        const gVal = Math.round(55 - stretchRatio * 35);
+        const bVal = Math.round(180 + stretchRatio * 55);
         ctx.strokeStyle = `rgb(${rVal}, ${gVal}, ${bVal})`;
         ctx.lineWidth = bandThickness;
         ctx.lineCap = 'round';
+
+        // Draw with slight catenary / dynamic vibration if moving fast
         ctx.beginPath();
         ctx.moveTo(this.screw.x, this.screw.y);
-        ctx.lineTo(bandPt.x, bandPt.y);
+        if (this.flutterTime > 0) {
+          const midX = (this.screw.x + bandPt.x) / 2 + (Math.random() - 0.5) * 6;
+          const midY = (this.screw.y + bandPt.y) / 2 + (Math.random() - 0.5) * 6;
+          ctx.quadraticCurveTo(midX, midY, bandPt.x, bandPt.y);
+        } else {
+          ctx.lineTo(bandPt.x, bandPt.y);
+        }
         ctx.stroke();
 
-        // Inner elastic sheen
-        ctx.strokeStyle = 'rgba(255, 230, 255, 0.45)';
+        // Inner elastic specular highlight
+        ctx.strokeStyle = 'rgba(255, 230, 255, 0.55)';
         ctx.lineWidth = Math.max(1, bandThickness * 0.3);
-        ctx.beginPath();
-        ctx.moveTo(this.screw.x, this.screw.y);
-        ctx.lineTo(bandPt.x, bandPt.y);
         ctx.stroke();
 
-        // Looped knot around the screw
+        // Knot loop around the screw
         ctx.fillStyle = `rgb(${rVal}, ${gVal}, ${bVal})`;
         ctx.beginPath();
         ctx.arc(this.screw.x, this.screw.y, 6.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        // 2. Draw Screw Anchor (just like photo)
+        // 2. Draw Screw Anchor (steel wood screw from photo)
         ctx.save();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.beginPath();
         ctx.arc(this.screw.x + 3, this.screw.y + 4, 10, 0, Math.PI * 2);
         ctx.fill();
@@ -1318,8 +1357,8 @@
           this.screw.x - 2, this.screw.y - 2, 2,
           this.screw.x, this.screw.y, 9
         );
-        screwGrad.addColorStop(0, '#f8fafc');
-        screwGrad.addColorStop(0.6, '#94a3b8');
+        screwGrad.addColorStop(0, '#ffffff');
+        screwGrad.addColorStop(0.5, '#94a3b8');
         screwGrad.addColorStop(1, '#334155');
         ctx.fillStyle = screwGrad;
         ctx.beginPath();
@@ -1329,7 +1368,7 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Phillips / cross screw drive
+        // Phillips drive cross
         ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 2.2;
         ctx.beginPath();
@@ -1342,13 +1381,13 @@
 
         // 3. Bat Shadow
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 16;
         ctx.shadowOffsetX = 8;
         ctx.shadowOffsetY = 12;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
         ctx.translate(this.pivot.x, this.pivot.y);
-        ctx.rotate(this.angle);
+        ctx.rotate(drawAngle);
         ctx.beginPath();
         ctx.roundRect(0, -this.width / 2, this.length, this.width, [this.width / 2]);
         ctx.fill();
@@ -1357,11 +1396,11 @@
         // 4. Duct Tape Bat Body (exact visual match for specs/flick_bball.jpeg)
         ctx.save();
         ctx.translate(this.pivot.x, this.pivot.y);
-        ctx.rotate(this.angle);
+        ctx.rotate(drawAngle);
 
         // Core cardboard bat
         const batGrad = ctx.createLinearGradient(0, -this.width/2, 0, this.width/2);
-        batGrad.addColorStop(0, '#e2e8f0');
+        batGrad.addColorStop(0, '#f1f5f9');
         batGrad.addColorStop(0.25, '#94a3b8');
         batGrad.addColorStop(0.7, '#64748b');
         batGrad.addColorStop(1, '#334155');
@@ -1373,14 +1412,14 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Silver duct tape wraps with metallic specular highlights & tape folds
+        // Silver duct tape wraps with metallic sheen & tape folds
         for (let x = 16; x < this.length - 12; x += 18) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.26)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
           ctx.beginPath();
           ctx.rect(x, -this.width/2, 12, this.width);
           ctx.fill();
 
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
           ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.moveTo(x + 2, -this.width/2);
@@ -1392,10 +1431,10 @@
         ctx.fillStyle = '#784620';
         ctx.fillRect(4, -this.width/2 + 2, 28, this.width - 4);
 
-        // Rubberband anchor hole & loop on bat
+        // Rubberband loop anchor point on bat
         ctx.fillStyle = '#9333ea';
         ctx.beginPath();
-        ctx.arc(this.bandAttachmentDist, 0, 4.5, 0, Math.PI * 2);
+        ctx.arc(this.bandAttachmentDist, 0, 5, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#581c87';
         ctx.lineWidth = 1.5;
@@ -1404,42 +1443,77 @@
         // Pivot bolt & washer
         ctx.fillStyle = '#1e293b';
         ctx.beginPath();
-        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#f1f5f9';
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(-1, -1, 3.5, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
+
+        // 5. Tension / Power Arc Visualizer when pulling back
+        if (this.isDragging || this.tension > 0.05) {
+          ctx.save();
+          // Arc showing pull distance
+          ctx.strokeStyle = `rgba(${Math.round(240 * this.tension + 60)}, ${Math.round(200 * (1 - this.tension))}, 30, 0.75)`;
+          ctx.lineWidth = 4;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(this.pivot.x, this.pivot.y, this.length * 0.85, this.angle, this.restAngle);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Power percentage badge near bat tip
+          const badgeX = tip.x + 18;
+          const badgeY = tip.y - 12;
+          ctx.fillStyle = 'rgba(15, 20, 26, 0.88)';
+          ctx.roundRect(badgeX - 4, badgeY - 14, 82, 22, [6]);
+          ctx.fill();
+          ctx.strokeStyle = '#f8c233';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.font = '700 12px "Outfit", sans-serif';
+          ctx.fillStyle = '#f8c233';
+          ctx.textAlign = 'left';
+          ctx.fillText(`FLICK ${Math.round(this.tension * 100)}%`, badgeX + 4, badgeY + 1);
+          ctx.restore();
+        }
       }
     }
 
     /* =========================================================================
        BALL PHYSICS & STATES
+       Substantial marble / baseball physics with realistic cardboard bounciness
+       and permanent size preservation (never shrinks permanently!).
        ========================================================================= */
 
     class Ball {
       constructor() {
-        this.radius = 12;
-        this.x = HOME_PLATE.x - 30;
-        this.y = HOME_PLATE.y + 30;
+        this.baseRadius = 18; // Full substantial baseball size (36px diameter)
+        this.radius = 18;     // Preserved collision radius
+        this.visualScale = 1.0;
+
+        this.x = HOME_PLATE.x - 45;
+        this.y = HOME_PLATE.y + 40;
         this.vx = 0;
         this.vy = 0;
         this.mass = 1.0;
-        this.restitution = 0.65; // cardboard bounciness
-        this.friction = 0.988;   // gentle rolling resistance
+        this.restitution = 0.72; // solid pop off bat & cardboard
+        this.friction = 0.990;   // smooth rolling resistance
 
         this.inPlay = false;
         this.settledInPocket = null;
         this.settleTimer = 0;
         this.trail = [];
         this.isPitched = false;
-        this.pitchTarget = null;
         this.inPitcherHole = false;
       }
 
       resetAtTee() {
+        this.radius = this.baseRadius;
+        this.visualScale = 1.0;
         this.x = HOME_PLATE.x - 45;
         this.y = HOME_PLATE.y + 40;
         this.vx = 0;
@@ -1453,6 +1527,8 @@
       }
 
       pitchFromMound(mode = 'straight') {
+        this.radius = this.baseRadius;
+        this.visualScale = 1.0;
         this.x = PITCHER_MOUND.x;
         this.y = PITCHER_MOUND.y;
         this.inPitcherHole = false;
@@ -1462,22 +1538,22 @@
         this.isPitched = true;
         this.trail = [];
 
-        // Calculate pitch vector towards hitting zone near home plate
-        const targetX = HOME_PLATE.x - 40 + (Math.random() * 16 - 8);
-        const targetY = HOME_PLATE.y + 35 + (Math.random() * 16 - 8);
+        // Target hitting zone right in front of home plate
+        const targetX = HOME_PLATE.x - 42 + (Math.random() * 16 - 8);
+        const targetY = HOME_PLATE.y + 36 + (Math.random() * 16 - 8);
         const dx = targetX - this.x;
         const dy = targetY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        let speed = 260; // pixels per sec
-        if (mode === 'changeup') speed = 175;
-        if (mode === 'straight') speed = 290;
+        let speed = 280; // pixels per sec
+        if (mode === 'changeup') speed = 185;
+        if (mode === 'straight') speed = 310;
 
         this.vx = (dx / dist) * speed;
         this.vy = (dy / dist) * speed;
 
-        // Apply curve spin if selected
-        this.spin = (mode === 'curve') ? (Math.random() > 0.5 ? 140 : -140) : 0;
+        // Apply curve spin
+        this.spin = (mode === 'curve') ? (Math.random() > 0.5 ? 160 : -160) : 0;
 
         sounds.playPitchRoll();
       }
@@ -1485,11 +1561,11 @@
       subUpdate(subDt, bat) {
         if (!this.inPlay && !this.inPitcherHole) return;
 
-        // Handle ball falling into pitcher's hole
+        // If ball is in pitcher's hole, animate fall visualScale only (NEVER mutate this.radius!)
         if (this.inPitcherHole) {
-          this.vx *= 0.82;
-          this.vy *= 0.82;
-          this.radius = Math.max(2, this.radius - 0.4);
+          this.vx *= 0.85;
+          this.vy *= 0.85;
+          this.visualScale = Math.max(0.12, this.visualScale - 0.04);
           this.x += this.vx * subDt;
           this.y += this.vy * subDt;
           return;
@@ -1581,11 +1657,12 @@
 
           // If moving towards each other, resolve impact impulse
           if (velAlongNormal < 0) {
-            const restitution = 0.88; // Crisp pop off silver duct tape
+            const restitution = 0.90; // Crisp pop off silver duct tape
             const impulse = -(1 + restitution) * velAlongNormal;
 
-            this.vx += nx * impulse + bvx * 1.15;
-            this.vy += ny * impulse + bvy * 1.15;
+            // Transfer bat momentum and directional flick power
+            this.vx += nx * impulse + bvx * 1.25;
+            this.vy += ny * impulse + bvy * 1.25;
 
             // Separate bodies to prevent sticking
             const overlap = minDist - dist;
@@ -1728,12 +1805,14 @@
       }
 
       draw(ctx) {
+        const currentR = this.radius * this.visualScale;
+
         // Draw ball trail
         ctx.save();
         for (let i = 0; i < this.trail.length; i++) {
           const pt = this.trail[i];
           const trAlpha = (i / this.trail.length) * 0.45;
-          const trRadius = this.radius * (0.4 + (i / this.trail.length) * 0.6);
+          const trRadius = currentR * (0.4 + (i / this.trail.length) * 0.6);
           ctx.fillStyle = `rgba(255, 255, 255, ${trAlpha})`;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, trRadius, 0, Math.PI * 2);
@@ -1743,32 +1822,32 @@
 
         // Ball Shadow
         ctx.save();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
         ctx.beginPath();
-        ctx.ellipse(this.x + 3, this.y + 5, this.radius, this.radius * 0.75, 0, 0, Math.PI * 2);
+        ctx.ellipse(this.x + 3, this.y + 5, currentR, currentR * 0.75, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Baseball body (cream leather baseball with red stitches)
         const ballGrad = ctx.createRadialGradient(
-          this.x - this.radius * 0.35, this.y - this.radius * 0.35, this.radius * 0.1,
-          this.x, this.y, this.radius
+          this.x - currentR * 0.35, this.y - currentR * 0.35, currentR * 0.1,
+          this.x, this.y, currentR
         );
         ballGrad.addColorStop(0, '#ffffff');
         ballGrad.addColorStop(0.7, '#f4ece1');
         ballGrad.addColorStop(1, '#c9bbaa');
         ctx.fillStyle = ballGrad;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, currentR, 0, Math.PI * 2);
         ctx.fill();
 
         // Red baseball seams
         ctx.strokeStyle = '#c1121f';
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
-        ctx.arc(this.x - 3, this.y, this.radius * 0.7, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.arc(this.x - currentR * 0.25, this.y, currentR * 0.72, -Math.PI * 0.35, Math.PI * 0.35);
         ctx.stroke();
         ctx.beginPath();
-        ctx.arc(this.x + 3, this.y, this.radius * 0.7, Math.PI * 0.65, Math.PI * 1.35);
+        ctx.arc(this.x + currentR * 0.25, this.y, currentR * 0.72, Math.PI * 0.65, Math.PI * 1.35);
         ctx.stroke();
 
         ctx.restore();
@@ -2309,13 +2388,13 @@
       sounds.init();
       const pos = getCanvasCoordinates(evt);
 
-      // Check if clicking near the bat or home plate
+      // Check if clicking near the bat or home plate area (generous forgiving hitzone)
       const batTip = game.bat.getTip();
       const dPivot = Math.hypot(pos.x - game.bat.pivot.x, pos.y - game.bat.pivot.y);
       const dTip = Math.hypot(pos.x - batTip.x, pos.y - batTip.y);
+      const inBatZone = (pos.x > INNER_RIGHT - 240 && pos.y < INNER_TOP + 260);
 
-      // If clicked near the bat
-      if (dTip < 80 || dPivot < 140) {
+      if (dTip < 110 || dPivot < 180 || inBatZone) {
         game.bat.isDragging = true;
         canvas.classList.add('dragging');
         onPointerMove(evt);
@@ -2332,13 +2411,14 @@
       const dy = pos.y - game.bat.pivot.y;
       let angle = Math.atan2(dy, dx);
 
-      // Clamp angle within pull-back range
-      angle = Math.max(game.bat.minAngle, Math.min(game.bat.restAngle + 0.1, angle));
+      // Clamp angle within pull-back range: minAngle (cocked back) to restAngle (forward rest)
+      angle = Math.max(game.bat.minAngle, Math.min(game.bat.restAngle, angle));
       game.bat.targetAngle = angle;
+      game.bat.angle = angle; // Instant, 1:1 physical response while dragging
 
       // Play audio stretch creak proportional to pull
       const strainRatio = (game.bat.restAngle - angle) / (game.bat.restAngle - game.bat.minAngle);
-      if (Math.random() < 0.25) {
+      if (Math.random() < 0.22) {
         sounds.playStretch(strainRatio);
       }
       evt.preventDefault();
@@ -2348,6 +2428,8 @@
       if (game.bat.isDragging) {
         game.bat.isDragging = false;
         canvas.classList.remove('dragging');
+        // Initial release triggers snappy whip snap!
+        game.bat.angularVel = 0;
         sounds.playSnap();
       }
     }
@@ -2371,18 +2453,21 @@
         nudgeBox();
       } else if (e.code === 'KeyR') {
         game.ball.resetAtTee();
-      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
-        // Pull back bat via key
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS' || e.code === 'KeyF') {
+        // Pull back bat via key (Hold to pull, release to flick)
+        e.preventDefault();
         game.bat.isDragging = true;
-        game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.targetAngle - 0.2);
-        sounds.playStretch(0.6);
+        game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.08);
+        game.bat.angle = game.bat.targetAngle;
+        sounds.playStretch(game.bat.tension);
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+      if (e.code === 'ArrowDown' || e.code === 'KeyS' || e.code === 'KeyF') {
         if (game.bat.isDragging) {
           game.bat.isDragging = false;
+          game.bat.angularVel = 0;
           sounds.playSnap();
         }
       }
@@ -2422,6 +2507,41 @@
 
     document.getElementById('pitchBtn').addEventListener('click', triggerPitch);
     document.getElementById('nudgeBtn').addEventListener('click', nudgeBox);
+
+    // Flick Bat button (Hold to pull back rubberband, release to snap!)
+    const flickBtn = document.getElementById('flickBatBtn');
+    let flickPullInterval = null;
+
+    function startFlickPull(evt) {
+      if (evt) evt.preventDefault();
+      sounds.init();
+      game.bat.isDragging = true;
+      if (flickPullInterval) clearInterval(flickPullInterval);
+      flickPullInterval = setInterval(() => {
+        if (game.bat.isDragging) {
+          game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.07);
+          game.bat.angle = game.bat.targetAngle;
+          sounds.playStretch(game.bat.tension);
+        }
+      }, 25);
+    }
+
+    function releaseFlick(evt) {
+      if (flickPullInterval) {
+        clearInterval(flickPullInterval);
+        flickPullInterval = null;
+      }
+      if (game.bat.isDragging) {
+        game.bat.isDragging = false;
+        game.bat.angularVel = 0;
+        sounds.playSnap();
+      }
+    }
+
+    flickBtn.addEventListener('mousedown', startFlickPull);
+    window.addEventListener('mouseup', releaseFlick);
+    flickBtn.addEventListener('touchstart', startFlickPull, { passive: false });
+    window.addEventListener('touchend', releaseFlick);
 
     document.getElementById('pitchModeSelect').addEventListener('change', (e) => {
       if (e.target.value === 'tee') {
