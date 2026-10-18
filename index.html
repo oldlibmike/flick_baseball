@@ -940,6 +940,7 @@
               <th>TEAM</th>
               <th>1</th><th>2</th><th>3</th>
               <th>R</th><th>H</th><th>E</th>
+              <th>AVG</th>
             </tr>
           </thead>
           <tbody>
@@ -949,6 +950,7 @@
               <td class="score-val" id="visitorRuns">0</td>
               <td id="visitorHits">0</td>
               <td id="visitorErrors">0</td>
+              <td id="visitorAvg" style="font-weight: 700; color:#94a3b8;">.240</td>
             </tr>
             <tr id="homeRow" class="active-team">
               <td style="font-weight: 800; color:#f8c233;">HOME</td>
@@ -956,6 +958,7 @@
               <td class="score-val" id="homeRuns">0</td>
               <td id="homeHits">0</td>
               <td id="homeErrors">0</td>
+              <td id="homeAvg" style="font-weight: 800; color:#f8c233;">.000</td>
             </tr>
           </tbody>
         </table>
@@ -1021,9 +1024,10 @@
           Pull back the rubberband bat to flick! Press [PITCH] or [Space] when ready!
         </div>
         <div class="stats-row">
-          <span>Exit Velo: <strong class="stat-pill" id="statVelo">--</strong></span>
-          <span>Distance: <strong class="stat-pill" id="statDist">--</strong></span>
-          <span>Last Play: <strong class="stat-pill" id="statPlay">Ready</strong></span>
+          <span>Exit: <strong class="stat-pill" id="statVelo">--</strong></span>
+          <span>Dist: <strong class="stat-pill" id="statDist">--</strong></span>
+          <span>AVG: <strong class="stat-pill" id="statAvg">.000</strong></span>
+          <span>Play: <strong class="stat-pill" id="statPlay">Ready</strong></span>
         </div>
       </div>
 
@@ -1884,32 +1888,52 @@
         let mode = selectedMode;
         if (mode === 'random') {
           const r = Math.random();
-          if (r < 0.40) mode = 'fastball';
-          else if (r < 0.72) mode = 'curve';
+          if (r < 0.45) mode = 'fastball';
+          else if (r < 0.75) mode = 'curve';
           else mode = 'changeup';
         }
 
         this.currentPitchType = mode;
 
-        // Realistic pitcher target variance (strike zone vs painted corners)
-        const targetX = HOME_PLATE.x + (Math.random() * 20 - 10);
-        const targetY = HOME_PLATE.y + (Math.random() * 20 - 10);
+        // Realistic MLB Pitch Location Distribution:
+        // ~25% Over the heart of the plate (meatball)
+        // ~35% Painted on the corner/edge (challenging strike <= 36 px)
+        // ~40% Clear balls outside the strike zone (> 36 px: 42 to 82 px)
+        const locationRoll = Math.random();
+        let perpOffset = 0; // Perpendicular distance from home plate center in pixels
+
+        if (locationRoll < 0.25) {
+          // Meatball right down the pipe: -14 to +14 px
+          perpOffset = (Math.random() - 0.5) * 28;
+        } else if (locationRoll < 0.60) {
+          // Painted corner / edge: 22 to 35 px (Inside strike zone: <= 36 px)
+          const sign = Math.random() > 0.5 ? 1 : -1;
+          perpOffset = sign * (22 + Math.random() * 13);
+        } else {
+          // Chase ball outside the zone: 42 to 80 px (Outside strike zone: > 36 px)
+          const sign = Math.random() > 0.5 ? 1 : -1;
+          perpOffset = sign * (42 + Math.random() * 38);
+        }
+
+        // Target coordinates along perpendicular axis
+        const targetX = HOME_PLATE.x + perpOffset * 0.70710678;
+        const targetY = HOME_PLATE.y + perpOffset * 0.70710678;
         const dx = targetX - this.x;
         const dy = targetY - this.y;
         const dist = Math.hypot(dx, dy);
 
         let speed = 310;
         if (mode === 'fastball') {
-          // Fast heater: 415 - 450 px/s (arrives in ~0.65s!)
-          speed = 415 + Math.random() * 35;
+          // Blazing heater: 420 - 470 px/s (arrives in ~0.60s!)
+          speed = 420 + Math.random() * 50;
           this.spin = (Math.random() - 0.5) * 40;
         } else if (mode === 'curve') {
-          // Curveball break: 300 - 330 px/s with sharp spin
-          speed = 300 + Math.random() * 30;
-          this.spin = Math.random() > 0.5 ? 220 : -220;
+          // Sharp curveball break: 300 - 340 px/s with heavy spin
+          speed = 300 + Math.random() * 40;
+          this.spin = Math.random() > 0.5 ? 240 : -240;
         } else if (mode === 'changeup') {
-          // Off-speed slow floater: 195 - 225 px/s (takes ~1.3s!)
-          speed = 195 + Math.random() * 30;
+          // Off-speed floater: 190 - 225 px/s (takes ~1.3s!)
+          speed = 190 + Math.random() * 35;
           this.spin = (Math.random() - 0.5) * 60;
         } else {
           speed = 310;
@@ -1917,6 +1941,8 @@
         }
 
         this.currentPitchSpeed = speed;
+        this.currentPerpOffset = perpOffset;
+        this.contactQuality = 1.0;
         this.vx = (dx / dist) * speed;
         this.vy = (dy / dist) * speed;
 
@@ -1971,7 +1997,7 @@
           if (progress > 295) {
             // Perpendicular offset from home plate center
             const perpOffset = Math.abs((dx + dy) * 0.70710678);
-            const swung = bat.isDragging || Math.abs(bat.angularVel) > 2.5 || bat.isStuck;
+            const swung = bat.isDragging || Math.abs(bat.angularVel) > 2.2 || bat.isStuck;
 
             this.isPitched = false;
             this.inPlay = false;
@@ -1980,10 +2006,10 @@
 
             if (swung) {
               game.recordStrike("Swung and missed! Strike!");
-            } else if (perpOffset <= 38) {
-              game.recordStrike("Called Strike right in the zone!");
+            } else if (perpOffset <= 36) {
+              game.recordStrike(perpOffset > 22 ? "Called Strike on the corner!" : "Called Strike right down the middle!");
             } else {
-              game.recordBall("Ball outside the strike zone!");
+              game.recordBall(perpOffset > 58 ? "Ball way outside the zone!" : "Ball just missed the black!");
             }
             return;
           }
@@ -2059,20 +2085,38 @@
 
           // If moving towards each other, resolve impact impulse
           if (velAlongNormal < 0) {
-            // Realistic cardboard / duct-tape pop with subtle spring & sweet-spot randomness
-            const restitution = 0.84 + Math.random() * 0.08;
-            const impulse = -(1 + restitution) * velAlongNormal * 0.18;
+            // Quality of contact based on barrel sweet spot:
+            // Sweet spot is between 0.52 and 0.88 along the bat barrel
+            let barrelQuality = 1.0;
+            if (t < 0.48) {
+              // Jammed on the handle!
+              barrelQuality = 0.35 + 0.65 * Math.max(0, t / 0.48);
+            } else if (t > 0.90) {
+              // Off the end of the bat!
+              barrelQuality = 0.50 + 0.50 * Math.max(0, (1.0 - t) / 0.10);
+            }
+
+            // Quality of contact based on pitch location (chasing balls outside the zone reduces solid contact)
+            const dxMound = this.x - PITCHER_MOUND.x;
+            const dyMound = this.y - PITCHER_MOUND.y;
+            const currPerp = Math.abs((dxMound + dyMound) * 0.70710678);
+            let chasePenalty = 1.0;
+            if (currPerp > 36) {
+              // Reaching for a pitch out of the zone
+              chasePenalty = Math.max(0.45, 1.0 - (currPerp - 36) * 0.015);
+            }
+
+            const totalContactQuality = barrelQuality * chasePenalty;
+            const restitution = (0.75 + Math.random() * 0.10) * totalContactQuality;
+            const impulse = -(1 + restitution) * velAlongNormal * 0.18 * totalContactQuality;
 
             // Raw velocity along normal + forward bat speed
-            let rawVx = nx * impulse + bvx * 0.08;
-            let rawVy = ny * impulse + bvy * 0.08;
+            let rawVx = nx * impulse + bvx * 0.08 * totalContactQuality;
+            let rawVy = ny * impulse + bvy * 0.08 * totalContactQuality;
             let rawSpeed = Math.hypot(rawVx, rawVy);
             let rawAngle = Math.atan2(rawVy, rawVx);
 
-            // Exit spray dynamics based on incoming pitch speed and timing:
-            // Fastball (415-450 px/s): arrives fast -> late contact -> pushes to OPPOSITE field
-            // Changeup (195-225 px/s): arrives slow -> early contact -> pulls to PULL field
-            // Medium / Curveball (300-330 px/s): centered contact -> drives straight to CENTER FIELD
+            // Exit spray dynamics based on incoming pitch speed and timing
             const pSpeed = this.currentPitchSpeed || 305;
             const speedFactor = (pSpeed - 305) / 305.0; // Fast: ~+0.42, Changeup: ~-0.35, Med: ~0.0
 
@@ -2080,19 +2124,19 @@
             // LHB (bat.direction < 0): Fast pushes left (+angle), Slow pulls right (-angle)
             const speedTimingDeflection = -speedFactor * 0.32 * (bat.direction > 0 ? 1 : -1);
 
-            // Add organic randomness to the swing arc (+- 5 degrees variance)
-            const sprayJitter = (Math.random() - 0.5) * 0.18;
-            const powerVar = 0.94 + Math.random() * 0.12;     // +- 6% exit velo
+            // Organic spray variance (increases on poor contact)
+            const jitterRange = 0.14 + (1.0 - totalContactQuality) * 0.22;
+            const sprayJitter = (Math.random() - 0.5) * jitterRange;
             const finalAngle = rawAngle + speedTimingDeflection + sprayJitter;
-            const finalSpeed = rawSpeed * powerVar;
+            const finalSpeed = rawSpeed * (0.92 + Math.random() * 0.15);
 
             this.vx = Math.cos(finalAngle) * finalSpeed;
             this.vy = Math.sin(finalAngle) * finalSpeed;
 
             // Impart dynamic spin for aerodynamic trajectory curve
-            this.spin = (Math.random() - 0.5) * 260;
+            this.spin = (Math.random() - 0.5) * 280;
 
-            // Cap max ball speed to ensure reliable boundary collision without tunneling
+            // Cap max ball speed
             const hitSpeed = Math.hypot(this.vx, this.vy);
             if (hitSpeed > 1500) {
               this.vx = (this.vx / hitSpeed) * 1500;
@@ -2106,11 +2150,12 @@
 
             // Mark ball as hit in play
             this.isPitched = false;
+            this.contactQuality = totalContactQuality;
 
-            sounds.playBatHit(hitSpeed * 0.0035);
+            sounds.playBatHit(Math.max(0.4, hitSpeed * 0.0035));
 
             // Trigger exit velo & announcer feedback
-            game.onBatHit(hitSpeed);
+            game.onBatHit(hitSpeed, totalContactQuality);
           }
         }
       }
@@ -2318,15 +2363,15 @@
        ========================================================================= */
 
     const BATTING_LINEUP = [
-      { name: "Rickey Henderson", hand: "right", num: "24", pos: "LF", avg: ".279", desc: "Leadoff Speedster" },
-      { name: "Tony Gwynn", hand: "left", num: "19", pos: "RF", avg: ".338", desc: "Contact Legend" },
-      { name: "Babe Ruth", hand: "left", num: "3", pos: "DH", avg: ".342", desc: "The Great Bambino" },
-      { name: "Hank Aaron", hand: "right", num: "44", pos: "CF", avg: ".305", desc: "Home Run King" },
-      { name: "Ted Williams", hand: "left", num: "9", pos: "LF", avg: ".344", desc: "The Splendid Splinter" },
-      { name: "Willie Mays", hand: "right", num: "24", pos: "CF", avg: ".302", desc: "The Say Hey Kid" },
-      { name: "Stan Musial", hand: "left", num: "6", pos: "1B", avg: ".331", desc: "Stan the Man" },
-      { name: "Cal Ripken Jr.", hand: "right", num: "8", pos: "SS", avg: ".276", desc: "The Iron Man" },
-      { name: "Ken Griffey Jr.", hand: "left", num: "24", pos: "CF", avg: ".284", desc: "The Sweetest Swing" },
+      { name: "Rickey Henderson", hand: "right", num: "24", pos: "LF", seasonAvg: ".279", ab: 0, h: 0, bb: 0, k: 0, desc: "Leadoff Speedster" },
+      { name: "Tony Gwynn", hand: "left", num: "19", pos: "RF", seasonAvg: ".338", ab: 0, h: 0, bb: 0, k: 0, desc: "Contact Legend" },
+      { name: "Babe Ruth", hand: "left", num: "3", pos: "DH", seasonAvg: ".342", ab: 0, h: 0, bb: 0, k: 0, desc: "The Great Bambino" },
+      { name: "Hank Aaron", hand: "right", num: "44", pos: "CF", seasonAvg: ".305", ab: 0, h: 0, bb: 0, k: 0, desc: "Home Run King" },
+      { name: "Ted Williams", hand: "left", num: "9", pos: "LF", seasonAvg: ".344", ab: 0, h: 0, bb: 0, k: 0, desc: "The Splendid Splinter" },
+      { name: "Willie Mays", hand: "right", num: "24", pos: "CF", seasonAvg: ".302", ab: 0, h: 0, bb: 0, k: 0, desc: "The Say Hey Kid" },
+      { name: "Stan Musial", hand: "left", num: "6", pos: "1B", seasonAvg: ".331", ab: 0, h: 0, bb: 0, k: 0, desc: "Stan the Man" },
+      { name: "Cal Ripken Jr.", hand: "right", num: "8", pos: "SS", seasonAvg: ".276", ab: 0, h: 0, bb: 0, k: 0, desc: "The Iron Man" },
+      { name: "Ken Griffey Jr.", hand: "left", num: "24", pos: "CF", seasonAvg: ".284", ab: 0, h: 0, bb: 0, k: 0, desc: "The Sweetest Swing" },
     ];
 
     class BaseballGame {
@@ -2353,6 +2398,12 @@
         this.visitorHits = 0;
         this.homeErrors = 0;
         this.visitorErrors = 0;
+
+        // Official Batting Average & Plate Discipline Stats
+        this.teamAtBats = 0;
+        this.teamHits = 0;
+        this.teamWalks = 0;
+        this.teamStrikeouts = 0;
 
         this.inningScores = {
           visitor: [0, 0, 0],
@@ -2387,13 +2438,16 @@
         const pos = document.getElementById('batterPos');
         const name = document.getElementById('batterName');
         const desc = document.getElementById('batterDesc');
+        const bAvg = b.ab > 0 ? (b.h / b.ab).toFixed(3).replace(/^0/, '') : '.000';
+        const teamAvg = this.teamAtBats > 0 ? (this.teamHits / this.teamAtBats).toFixed(3).replace(/^0/, '') : '.000';
+
         if (badge) {
           badge.textContent = `#${b.num} • ${b.hand === 'right' ? 'RHB (Righty)' : 'LHB (Lefty)'}`;
           badge.className = `batter-badge ${b.hand === 'right' ? 'rhb' : 'lhb'}`;
         }
         if (pos) pos.textContent = b.pos;
         if (name) name.textContent = b.name;
-        if (desc) desc.textContent = `${b.desc} • AVG: ${b.avg}`;
+        if (desc) desc.textContent = `Today: ${b.h}-for-${b.ab} (${bAvg}) • Career Best: ${b.seasonAvg}`;
         updateBatterHandUI();
       }
 
@@ -2402,10 +2456,14 @@
         sounds.playSnap();
         if (this.strikes >= 3) {
           this.outs++;
+          this.teamAtBats++;
+          this.teamStrikeouts++;
+          BATTING_LINEUP[this.batterIndex].ab++;
+          BATTING_LINEUP[this.batterIndex].k++;
           this.strikes = 0;
           this.ballsCount = 0;
           this.showBanner("STRIKEOUT!", "3 Strikes - You're Out!");
-          document.getElementById('statPlay').textContent = "Strikeout";
+          document.getElementById('statPlay').textContent = "Strikeout (K)";
           document.getElementById('announcerText').textContent = 
             `STRIKEOUT! That's an OUT! (${this.outs} Out${this.outs > 1 ? 's' : ''})`;
           this.updateUI();
@@ -2430,8 +2488,10 @@
         if (this.ballsCount >= 4) {
           this.ballsCount = 0;
           this.strikes = 0;
+          this.teamWalks++;
+          BATTING_LINEUP[this.batterIndex].bb++;
           this.showBanner("WALK!", "Ball 4 - Take your base!");
-          document.getElementById('statPlay').textContent = "Walk";
+          document.getElementById('statPlay').textContent = "Walk (BB)";
           this.advanceRunnersOnWalk();
           document.getElementById('announcerText').textContent = 
             "BALL FOUR! WALK! Batter takes 1st base!";
@@ -2481,10 +2541,10 @@
         }, delayMs);
       }
 
-      onBatHit(speed) {
+      onBatHit(speed, quality = 1.0) {
         // Convert physics velocity to authentic exit velocity (MPH) & distance (FT)
-        this.exitVeloMPH = Math.round(speed * 0.16 + 25);
-        this.distanceFT = Math.round(this.exitVeloMPH * 3.8 + Math.random() * 20);
+        this.exitVeloMPH = Math.round((speed * 0.16 + 22) * quality);
+        this.distanceFT = Math.round(this.exitVeloMPH * 3.7 + Math.random() * 18);
 
         document.getElementById('statVelo').textContent = `${this.exitVeloMPH} MPH`;
         document.getElementById('liveRadar').textContent = `${this.exitVeloMPH} MPH`;
@@ -2494,14 +2554,64 @@
       handleOutcome(outcomeType, label) {
         let announcement = '';
         let runsScoredThisPlay = 0;
+        const velo = this.exitVeloMPH || 70;
+        const q = (this.ball && this.ball.contactQuality) ? this.ball.contactQuality : 0.8;
+        const currentBatter = BATTING_LINEUP[this.batterIndex];
 
-        document.getElementById('statPlay').textContent = label;
+        // Authentic MLB Defensive Fielding & Out Thresholds:
+        // Ensures that batters average at BEST about .300 to .330 even with great timing:
+        let resolvedType = outcomeType;
+        let resolvedLabel = label;
 
         if (outcomeType === 'hr') {
+          // Home Run requires true crushed barrel contact (>= 86 MPH and quality >= 0.78)
+          if (velo >= 86 && q >= 0.78) {
+            resolvedType = 'hr';
+            resolvedLabel = "HOME RUN!";
+          } else {
+            resolvedType = 'out';
+            resolvedLabel = "Warning Track Flyout (F7)!";
+          }
+        } else if (outcomeType === 'triple') {
+          // Triple requires high power into gap (>= 78 MPH and quality >= 0.72)
+          if (velo >= 78 && q >= 0.72) {
+            resolvedType = 'triple';
+            resolvedLabel = "STAND-UP TRIPLE!";
+          } else {
+            resolvedType = 'out';
+            resolvedLabel = "Deep Flyout to Center (F8)!";
+          }
+        } else if (outcomeType === 'double') {
+          // Double requires crisp line drive (>= 70 MPH and quality >= 0.65)
+          if (velo >= 70 && q >= 0.65) {
+            resolvedType = 'double';
+            resolvedLabel = "DOUBLE IN THE GAP!";
+          } else {
+            resolvedType = 'out';
+            resolvedLabel = "Sharp Lineout to Outfield!";
+          }
+        } else if (outcomeType === 'single') {
+          // Single requires solid contact through hole (>= 58 MPH and quality >= 0.52)
+          if (velo >= 58 && q >= 0.52) {
+            resolvedType = 'single';
+            resolvedLabel = "BASE HIT SINGLE!";
+          } else {
+            resolvedType = 'out';
+            resolvedLabel = "Groundout to Shortstop (6-3)!";
+          }
+        }
+
+        document.getElementById('statPlay').textContent = resolvedLabel;
+
+        if (resolvedType === 'hr') {
           // Home Run: clear all bases + batter
           runsScoredThisPlay = 1 + this.runners.filter(Boolean).length;
           this.runners = [false, false, false];
           this.homeHits++;
+          this.teamHits++;
+          this.teamAtBats++;
+          currentBatter.h++;
+          currentBatter.ab++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
           this.ballsCount = 0;
@@ -2514,11 +2624,15 @@
           this.createConfetti(100);
           this.advanceBatter();
 
-        } else if (outcomeType === 'triple') {
+        } else if (resolvedType === 'triple') {
           // 3rd Base Hit
           runsScoredThisPlay = this.runners.filter(Boolean).length;
           this.runners = [false, false, true];
           this.homeHits++;
+          this.teamHits++;
+          this.teamAtBats++;
+          currentBatter.h++;
+          currentBatter.ab++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
           this.ballsCount = 0;
@@ -2526,7 +2640,7 @@
           this.showBanner("TRIPLE!", "Smoked off the yellow divider!");
           this.advanceBatter();
 
-        } else if (outcomeType === 'double') {
+        } else if (resolvedType === 'double') {
           // 2nd Base Hit: advance runners 2 bases
           if (this.runners[2]) runsScoredThisPlay++;
           if (this.runners[1]) runsScoredThisPlay++;
@@ -2534,6 +2648,10 @@
           this.runners[1] = true;
           this.runners[0] = false;
           this.homeHits++;
+          this.teamHits++;
+          this.teamAtBats++;
+          currentBatter.h++;
+          currentBatter.ab++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
           this.ballsCount = 0;
@@ -2541,13 +2659,17 @@
           this.showBanner("DOUBLE!", "Solid shot into the purple pocket!");
           this.advanceBatter();
 
-        } else if (outcomeType === 'single') {
+        } else if (resolvedType === 'single') {
           // 1st Base Hit: advance runners 1 base
           if (this.runners[2]) runsScoredThisPlay++;
           this.runners[2] = this.runners[1];
           this.runners[1] = this.runners[0];
           this.runners[0] = true;
           this.homeHits++;
+          this.teamHits++;
+          this.teamAtBats++;
+          currentBatter.h++;
+          currentBatter.ab++;
           this.addRuns(runsScoredThisPlay);
           this.strikes = 0;
           this.ballsCount = 0;
@@ -2555,8 +2677,8 @@
           this.showBanner("SINGLE!", "Sharp liner into orange pocket!");
           this.advanceBatter();
 
-        } else if (outcomeType === 'foul') {
-          // Foul ball
+        } else if (resolvedType === 'foul') {
+          // Foul ball: count advances, no official at-bat recorded
           if (this.strikes < 2) {
             this.strikes++;
             announcement = `Foul ball. Strike ${this.strikes}!`;
@@ -2565,13 +2687,15 @@
           }
 
         } else {
-          // Out or Pitcher's hole
+          // Out (Groundout, Flyout, Lineout, Infield hole, or Pocket out)
           this.outs++;
+          this.teamAtBats++;
+          currentBatter.ab++;
           this.strikes = 0;
           this.ballsCount = 0;
           announcement = (outcomeType === 'pitcher_out')
             ? "Caught by the pitcher in the mound slot! OUT!"
-            : "Ball settled in the Out pocket! That's an OUT!";
+            : (resolvedLabel.includes('!') ? resolvedLabel : `${resolvedLabel} That's an OUT!`);
           this.showBanner("OUT!", announcement);
 
           if (this.outs >= 3) {
@@ -2602,8 +2726,8 @@
         this.ballsCount = 0;
         this.runners = [false, false, false];
 
-        // Simulate CPU Away team's half inning
-        const cpuRunsThisInning = Math.floor(Math.random() * 2.2);
+        // Simulate CPU Away team's half inning (CPU averages ~1.4 runs per inning)
+        const cpuRunsThisInning = Math.floor(Math.random() * 2.1);
         this.visitorRuns += cpuRunsThisInning;
         this.visitorHits += cpuRunsThisInning + (Math.random() > 0.5 ? 1 : 0);
         const innIdx = this.currentInning - 1;
@@ -2613,8 +2737,9 @@
           this.gameOver = true;
           const won = this.homeRuns > this.visitorRuns;
           const tied = this.homeRuns === this.visitorRuns;
+          const teamAvg = this.teamAtBats > 0 ? (this.teamHits / this.teamAtBats).toFixed(3).replace(/^0/, '') : '.000';
           const msg = won 
-            ? `VICTORY! HOME WINS ${this.homeRuns} - ${this.visitorRuns}!`
+            ? `VICTORY! HOME WINS ${this.homeRuns} - ${this.visitorRuns}! Final AVG: ${teamAvg}`
             : (tied ? `DRAW GAME! Final: ${this.homeRuns} - ${this.visitorRuns}` : `FINAL: VISITORS WIN ${this.visitorRuns} - ${this.homeRuns}!`);
           this.showBanner(won ? "WINNER!" : "GAME OVER", msg);
           document.getElementById('announcerText').textContent = msg;
@@ -2699,6 +2824,20 @@
         document.getElementById('v2').textContent = this.currentInning >= 2 ? (this.inningScores.visitor[1] ?? 0) : '-';
         document.getElementById('v3').textContent = this.currentInning >= 3 ? (this.inningScores.visitor[2] ?? 0) : '-';
 
+        // Live Batting Average: At BEST ~ .300 to .330
+        const teamAvg = this.teamAtBats > 0 ? (this.teamHits / this.teamAtBats).toFixed(3).replace(/^0/, '') : '.000';
+        const homeAvgEl = document.getElementById('homeAvg');
+        if (homeAvgEl) homeAvgEl.textContent = teamAvg;
+        const statAvgEl = document.getElementById('statAvg');
+        if (statAvgEl) statAvgEl.textContent = teamAvg;
+
+        const b = BATTING_LINEUP[this.batterIndex];
+        const bAvg = b.ab > 0 ? (b.h / b.ab).toFixed(3).replace(/^0/, '') : '.000';
+        const descEl = document.getElementById('batterDesc');
+        if (descEl) {
+          descEl.textContent = `Today: ${b.h}-for-${b.ab} (${bAvg}) • Career Best: ${b.seasonAvg}`;
+        }
+
         // Balls
         document.getElementById('ball1').classList.toggle('ball-lit', this.ballsCount >= 1);
         document.getElementById('ball2').classList.toggle('ball-lit', this.ballsCount >= 2);
@@ -2731,6 +2870,18 @@
         this.visitorRuns = 0;
         this.homeHits = 0;
         this.visitorHits = 0;
+        this.teamAtBats = 0;
+        this.teamHits = 0;
+        this.teamWalks = 0;
+        this.teamStrikeouts = 0;
+
+        for (const batter of BATTING_LINEUP) {
+          batter.ab = 0;
+          batter.h = 0;
+          batter.bb = 0;
+          batter.k = 0;
+        }
+
         this.runners = [false, false, false];
         this.inningScores = { visitor: [0, 0, 0], home: [0, 0, 0] };
         this.gameOver = false;
@@ -2922,6 +3073,13 @@
       ctx.strokeStyle = '#2b1d12';
       ctx.lineWidth = 2.2;
       ctx.stroke();
+
+      // Authentic Chalk Strike Zone Boundary Box
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(-36, -36, 72, 72);
+      ctx.setLineDash([]);
 
       ctx.restore();
 
