@@ -789,8 +789,8 @@
           <div class="play-banner-desc" id="bannerDesc">Deep into the center pocket!</div>
         </div>
 
-        <!-- Start Game Splash Overlay -->
-        <div class="start-overlay" id="startOverlay">
+        <!-- Start Game Splash Overlay (hidden by default so game starts immediately) -->
+        <div class="start-overlay hidden" id="startOverlay">
           <div class="start-card">
             <div class="start-badge">★ VINTAGE CARDBOARD ARCADE ★</div>
             <h2 class="start-title">FLICK BASEBALL</h2>
@@ -815,6 +815,9 @@
           </button>
           <button class="pitch-btn" id="flickBatBtn" style="background: linear-gradient(135deg, #9333ea, #7e22ce); box-shadow: 0 4px 15px rgba(147, 51, 234, 0.45);" title="Hold to pull back rubberband, release to flick!">
             <span>⚡</span> FLICK BAT [F]
+          </button>
+          <button class="icon-btn" id="autoPitchBtn" style="background: rgba(34, 197, 94, 0.22); border-color: #22c55e; color: #86efac; font-weight:700;" title="Toggle automatic continuous pitching">
+            <span>🔄</span> <span id="autoPitchLabel">Auto-Pitch: ON</span>
           </button>
           <button class="icon-btn" id="nudgeBtn" title="Nudge the box if ball gets stuck">
             <span>👋</span> Nudge
@@ -2146,12 +2149,16 @@
             const mode = document.getElementById('pitchModeSelect').value;
             if (mode === 'tee') {
               this.ball.resetAtTee();
+            } else if (autoPitchEnabled) {
+              this.ball.pitchFromMound(mode);
+              document.getElementById('announcerText').textContent = 
+                `New pitch rolling in! (${mode.toUpperCase()}) Time your swing!`;
             } else {
               this.ball.x = -100;
               this.ball.y = -100;
               this.ball.inPlay = false;
               document.getElementById('announcerText').textContent = 
-                "Press [PITCH BALL] or Spacebar for next pitch!";
+                "Press [PITCH] or Spacebar for next pitch!";
             }
           }
         }, 1600);
@@ -2696,6 +2703,22 @@
       }
     });
 
+    // Auto-Pitch toggle state
+    let autoPitchEnabled = true;
+    const autoPitchBtn = document.getElementById('autoPitchBtn');
+    const autoPitchLabel = document.getElementById('autoPitchLabel');
+    if (autoPitchBtn && autoPitchLabel) {
+      autoPitchBtn.addEventListener('click', () => {
+        autoPitchEnabled = !autoPitchEnabled;
+        autoPitchLabel.textContent = `Auto-Pitch: ${autoPitchEnabled ? 'ON' : 'OFF'}`;
+        autoPitchBtn.style.borderColor = autoPitchEnabled ? '#22c55e' : 'rgba(255,255,255,0.2)';
+        autoPitchBtn.style.color = autoPitchEnabled ? '#86efac' : '#94a3b8';
+        if (autoPitchEnabled && !game.ball.inPlay) {
+          triggerPitch();
+        }
+      });
+    }
+
     // Sound toggle
     const soundBtn = document.getElementById('soundToggleBtn');
     soundBtn.addEventListener('click', () => {
@@ -2709,7 +2732,8 @@
     function startGame() {
       sounds.init();
       sounds.playChargeFanfare();
-      document.getElementById('startOverlay').classList.add('hidden');
+      const overlay = document.getElementById('startOverlay');
+      if (overlay) overlay.classList.add('hidden');
       game.reset();
       game.showBanner("PLAY BALL!", "Bottom 1st Inning • Batter Up!");
       document.getElementById('announcerText').textContent = 
@@ -2721,7 +2745,7 @@
         } else {
           game.ball.pitchFromMound(mode);
         }
-      }, 1000);
+      }, 900);
     }
 
     document.getElementById('bigStartBtn').addEventListener('click', startGame);
@@ -2787,8 +2811,9 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Initialize and start loop
+    // Initialize, start game immediately on load, and start loop
     game.init();
+    startGame();
     requestAnimationFrame(gameLoop);
 
   </script>
