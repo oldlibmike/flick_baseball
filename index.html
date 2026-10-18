@@ -1219,13 +1219,13 @@
     const INNER_SIZE = INNER_RIGHT - INNER_LEFT; // 780
 
     // Diamond landmarks
-    const HOME_PLATE = { x: INNER_RIGHT - 110, y: INNER_TOP + 110 };
-    const BASE_1ST = { x: INNER_RIGHT - 110, y: INNER_BOTTOM - 260 };
-    const BASE_3RD = { x: INNER_LEFT + 260, y: INNER_TOP + 110 };
-    const BASE_2ND = { x: INNER_LEFT + 260, y: INNER_BOTTOM - 260 };
+    const HOME_PLATE = { x: 680, y: 190 };
+    const BASE_1ST = { x: 680, y: 550 };
+    const BASE_3RD = { x: 320, y: 190 };
+    const BASE_2ND = { x: 320, y: 550 };
     const PITCHER_MOUND = { 
-      x: (HOME_PLATE.x + BASE_2ND.x) / 2 + 15, 
-      y: (HOME_PLATE.y + BASE_2ND.y) / 2 + 15 
+      x: 500, 
+      y: 370 
     };
 
     // Cardboard Dividers & Pockets Setup
@@ -1320,36 +1320,36 @@
 
     class RubberbandBat {
       constructor() {
-        // Pivot location: tucked in corner just outside home plate
-        this.pivot = { x: HOME_PLATE.x + 38, y: HOME_PLATE.y - 48 };
-        // Screw anchor location: drilled into cardboard below home plate
-        this.screw = { x: HOME_PLATE.x - 25, y: HOME_PLATE.y + 125 };
+        // Pivot location: mounted along top cardboard rim behind home plate
+        this.pivot = { x: 585, y: 95 };
+        // Screw anchor location: drilled into cardboard below bat
+        this.screw = { x: 515, y: 270 };
 
-        this.length = 165;
+        this.length = 170;
         this.width = 24;
-        this.mass = 0.75; // light cardboard bat for ultra-snappy whip acceleration
+        this.mass = 0.78; // lightweight cardboard bat for ultra-snappy whip acceleration
 
-        // Resting position against forward cardboard stopper (across home plate)
-        this.restAngle = Math.PI * 0.72; // ~130 deg
-        // Pulled back against rubber band (near right wall)
-        this.minAngle = Math.PI * 0.12;  // ~21 deg
+        // Resting position against forward cardboard stopper (after crossing home plate)
+        this.restAngle = 1.50; // ~86 deg (pointing down)
+        // Pulled back against rubber band (cocked back along top wall behind home plate)
+        this.minAngle = -0.15;  // ~ -9 deg
         // Forward stop (physical cardboard limit)
-        this.maxAngle = Math.PI * 0.75;  // ~135 deg
+        this.maxAngle = 1.64;  // ~94 deg
 
         this.angle = this.restAngle;
         this.angularVel = 0;
         this.angularAccel = 0;
 
-        // Massive spring torque constant for an explosive rubber band snap!
-        this.springK = 5200.0;
-        this.damping = 4.2; // low swing damping for fast whip speed
+        // Snappy spring torque constant for an explosive rubber band snap!
+        this.springK = 480.0;
+        this.damping = 5.2;
 
         this.isDragging = false;
         this.targetAngle = this.restAngle;
         this.tension = 0; // 0 (rest) to 1 (full pull)
 
         // Rubberband attachment point along bat from pivot
-        this.bandAttachmentDist = 88;
+        this.bandAttachmentDist = 86;
 
         // Cardboard stopper rebound flutter (the "TWANG" oscillation)
         this.flutterTime = 0;
@@ -1400,16 +1400,16 @@
           this.tension = Math.max(0, Math.min(1, (this.restAngle - this.angle) / (this.restAngle - this.minAngle)));
         } else {
           // Accurate rubber band spring acceleration
-          // When pulled back (angle < restAngle), the rubberband exerts huge forward torque!
+          // When pulled back (angle < restAngle), the rubberband exerts forward clockwise torque!
           let springTorque = 0;
           if (this.angle < this.restAngle) {
             const pullDeflection = this.restAngle - this.angle;
-            // Progressive non-linear rubberband tension: accelerates faster as it contracts
-            springTorque = this.springK * Math.pow(pullDeflection, 1.25);
+            // Progressive rubberband tension: accelerates faster as it contracts
+            springTorque = this.springK * Math.pow(pullDeflection, 1.15);
             this.tension = Math.max(0, Math.min(1, pullDeflection / (this.restAngle - this.minAngle)));
           } else {
-            // Gentle stopper resistance if pushed beyond rest
-            springTorque = -this.springK * 0.4 * (this.angle - this.restAngle);
+            // Firm stopper resistance if pushed beyond rest
+            springTorque = -this.springK * 0.8 * (this.angle - this.restAngle);
             this.tension = 0;
           }
 
@@ -1423,12 +1423,12 @@
           // Impact with forward cardboard stopper!
           if (this.angle >= this.maxAngle) {
             this.angle = this.maxAngle;
-            if (this.angularVel > 8) {
+            if (this.angularVel > 6) {
               // Rebound bounce + trigger twang flutter
               this.flutterAmp = Math.min(0.08, this.angularVel * 0.002);
               this.flutterTime = 0.20;
-              this.angularVel = -this.angularVel * 0.32;
-              sounds.playWallBounce(2.5);
+              this.angularVel = -this.angularVel * 0.25;
+              sounds.playWallBounce(2.2);
               sounds.playSnap();
             } else {
               this.angularVel = 0;
@@ -1610,7 +1610,7 @@
           ctx.lineWidth = 4;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
-          ctx.arc(this.pivot.x, this.pivot.y, this.length * 0.85, this.angle, this.restAngle);
+          ctx.arc(this.pivot.x, this.pivot.y, this.length * 0.85, Math.min(this.angle, this.restAngle), Math.max(this.angle, this.restAngle));
           ctx.stroke();
           ctx.setLineDash([]);
 
@@ -1645,8 +1645,8 @@
         this.radius = 18;     // Preserved collision radius
         this.visualScale = 1.0;
 
-        this.x = HOME_PLATE.x - 45;
-        this.y = HOME_PLATE.y + 40;
+        this.x = HOME_PLATE.x;
+        this.y = HOME_PLATE.y;
         this.vx = 0;
         this.vy = 0;
         this.mass = 1.0;
@@ -1664,8 +1664,8 @@
       resetAtTee() {
         this.radius = this.baseRadius;
         this.visualScale = 1.0;
-        this.x = HOME_PLATE.x - 45;
-        this.y = HOME_PLATE.y + 40;
+        this.x = HOME_PLATE.x;
+        this.y = HOME_PLATE.y;
         this.vx = 0;
         this.vy = 0;
         this.inPlay = true;
@@ -1688,9 +1688,9 @@
         this.isPitched = true;
         this.trail = [];
 
-        // Target hitting zone right in front of home plate
-        const targetX = HOME_PLATE.x - 42 + (Math.random() * 16 - 8);
-        const targetY = HOME_PLATE.y + 36 + (Math.random() * 16 - 8);
+        // Target hitting zone right on home plate
+        const targetX = HOME_PLATE.x + (Math.random() * 10 - 5);
+        const targetY = HOME_PLATE.y + (Math.random() * 10 - 5);
         const dx = targetX - this.x;
         const dy = targetY - this.y;
         const dist = Math.hypot(dx, dy);
@@ -1807,22 +1807,28 @@
 
           // If moving towards each other, resolve impact impulse
           if (velAlongNormal < 0) {
-            const restitution = 0.90; // Crisp pop off silver duct tape
-            const impulse = -(1 + restitution) * velAlongNormal;
+            const restitution = 0.88; // Crisp pop off silver duct tape
+            const impulse = -(1 + restitution) * velAlongNormal * 0.18;
 
-            // Transfer bat momentum and directional flick power
-            this.vx += nx * impulse + bvx * 1.25;
-            this.vy += ny * impulse + bvy * 1.25;
+            // Direct momentum transfer along collision normal + forward bat speed
+            this.vx += nx * impulse + bvx * 0.08;
+            this.vy += ny * impulse + bvy * 0.08;
+
+            // Cap max ball speed to ensure reliable boundary collision without tunneling
+            const hitSpeed = Math.hypot(this.vx, this.vy);
+            if (hitSpeed > 1500) {
+              this.vx = (this.vx / hitSpeed) * 1500;
+              this.vy = (this.vy / hitSpeed) * 1500;
+            }
 
             // Separate bodies to prevent sticking
             const overlap = minDist - dist;
-            this.x += nx * overlap;
-            this.y += ny * overlap;
+            this.x += nx * (overlap + 1.5);
+            this.y += ny * (overlap + 1.5);
 
             // Mark ball as hit in play
             this.isPitched = false;
 
-            const hitSpeed = Math.hypot(this.vx, this.vy);
             sounds.playBatHit(hitSpeed * 0.0035);
 
             // Trigger exit velo & announcer feedback
@@ -2393,12 +2399,12 @@
       ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      // 1st base line along right edge
-      ctx.moveTo(HOME_PLATE.x + 10, HOME_PLATE.y);
-      ctx.lineTo(BASE_1ST.x + 10, BASE_1ST.y + 40);
-      // 3rd base line along top edge
-      ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y - 10);
-      ctx.lineTo(BASE_3RD.x - 40, BASE_3RD.y - 10);
+      // 1st base foul line along right edge extending down to outfield
+      ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y);
+      ctx.lineTo(BASE_1ST.x, INNER_BOTTOM - POCKET_DEPTH);
+      // 3rd base foul line along top edge extending left to outfield
+      ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y);
+      ctx.lineTo(INNER_LEFT + POCKET_DEPTH, BASE_3RD.y);
       ctx.stroke();
       ctx.restore();
 
@@ -2420,10 +2426,40 @@
         ctx.restore();
       };
 
-      drawTapeBase(HOME_PLATE.x, HOME_PLATE.y, 42, 42, Math.PI / 4);
+      drawTapeBase(HOME_PLATE.x, HOME_PLATE.y, 44, 44, Math.PI / 4);
       drawTapeBase(BASE_1ST.x, BASE_1ST.y, 36, 36);
       drawTapeBase(BASE_2ND.x, BASE_2ND.y, 36, 36);
       drawTapeBase(BASE_3RD.x, BASE_3RD.y, 36, 36);
+
+      // Black rubber batting tee base on Home Plate
+      ctx.save();
+      ctx.fillStyle = '#1c1917';
+      ctx.beginPath();
+      ctx.arc(HOME_PLATE.x, HOME_PLATE.y, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#44403c';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = '#292524';
+      ctx.beginPath();
+      ctx.arc(HOME_PLATE.x, HOME_PLATE.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Cardboard Bat Stopper Peg (physically stops the bat after swinging across the plate)
+      const stopperX = 568;
+      const stopperY = 240;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(stopperX - 6 + 3, stopperY - 14 + 4, 14, 28);
+      ctx.fillStyle = '#9a6b38';
+      ctx.fillRect(stopperX - 6, stopperY - 14, 14, 28);
+      ctx.strokeStyle = '#5a3d1d';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(stopperX - 6, stopperY - 14, 14, 28);
+      ctx.fillStyle = 'rgba(246, 243, 232, 0.7)';
+      ctx.fillRect(stopperX - 6, stopperY - 6, 14, 12);
+      ctx.restore();
 
       // Pitcher's Mound Hole Cutout (Angled rectangle with deep cardboard shadow)
       ctx.save();
@@ -2546,9 +2582,9 @@
       const batTip = game.bat.getTip();
       const dPivot = Math.hypot(pos.x - game.bat.pivot.x, pos.y - game.bat.pivot.y);
       const dTip = Math.hypot(pos.x - batTip.x, pos.y - batTip.y);
-      const inBatZone = (pos.x > INNER_RIGHT - 240 && pos.y < INNER_TOP + 260);
+      const inBatZone = (pos.x > 480 && pos.x < 860 && pos.y > 40 && pos.y < 340);
 
-      if (dTip < 110 || dPivot < 180 || inBatZone) {
+      if (dTip < 120 || dPivot < 190 || inBatZone) {
         game.bat.isDragging = true;
         canvas.classList.add('dragging');
         onPointerMove(evt);
@@ -2570,10 +2606,12 @@
       game.bat.targetAngle = angle;
       game.bat.angle = angle; // Instant, 1:1 physical response while dragging
 
+      // Update tension
+      game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - angle) / (game.bat.restAngle - game.bat.minAngle)));
+
       // Play audio stretch creak proportional to pull
-      const strainRatio = (game.bat.restAngle - angle) / (game.bat.restAngle - game.bat.minAngle);
       if (Math.random() < 0.22) {
-        sounds.playStretch(strainRatio);
+        sounds.playStretch(game.bat.tension);
       }
       evt.preventDefault();
     }
@@ -2613,6 +2651,7 @@
         game.bat.isDragging = true;
         game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.08);
         game.bat.angle = game.bat.targetAngle;
+        game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - game.bat.angle) / (game.bat.restAngle - game.bat.minAngle)));
         sounds.playStretch(game.bat.tension);
       }
     });
@@ -2675,6 +2714,7 @@
         if (game.bat.isDragging) {
           game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.07);
           game.bat.angle = game.bat.targetAngle;
+          game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - game.bat.angle) / (game.bat.restAngle - game.bat.minAngle)));
           sounds.playStretch(game.bat.tension);
         }
       }, 25);
