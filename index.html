@@ -651,6 +651,103 @@
       color: #e2e8f0;
       margin-top: 4px;
     }
+
+    /* Start Game Splash Overlay */
+    .start-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(12, 16, 22, 0.82);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 80;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      padding: 20px;
+    }
+
+    .start-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95);
+    }
+
+    .start-card {
+      background: #c59b67;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 60%),
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 2px, transparent 2px, transparent 4px);
+      border: 5px solid #7d5227;
+      border-radius: 20px;
+      padding: 30px 24px;
+      text-align: center;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.25);
+      position: relative;
+    }
+
+    .start-badge {
+      font-family: var(--font-score);
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      color: #3b200b;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .start-title {
+      font-family: var(--font-marker);
+      font-size: 2.4rem;
+      color: #2b1807;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+
+    .start-subtitle {
+      font-size: 0.92rem;
+      color: #3f2711;
+      font-weight: 600;
+      margin-bottom: 22px;
+      line-height: 1.4;
+    }
+
+    .big-start-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #ffffff;
+      border: 3px solid #bbf7d0;
+      border-radius: 36px;
+      padding: 14px 42px;
+      font-family: var(--font-marker);
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .big-start-btn:hover {
+      transform: scale(1.08) translateY(-2px);
+      box-shadow: 0 12px 30px rgba(34, 197, 94, 0.7);
+    }
+
+    .big-start-btn:active {
+      transform: scale(0.98);
+    }
+
+    .start-hints {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 18px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #553313;
+    }
   </style>
 </head>
 <body>
@@ -665,6 +762,9 @@
       </div>
     </div>
     <div class="top-controls">
+      <button class="icon-btn" id="headerStartBtn" style="background: rgba(34, 197, 94, 0.25); border-color: #22c55e; color: #86efac;" title="Start New Match">
+        <span>▶</span> Play Ball!
+      </button>
       <button class="icon-btn" id="soundToggleBtn" title="Toggle Sound">
         <span id="soundIcon">🔊</span> <span id="soundLabel">Sound ON</span>
       </button>
@@ -687,6 +787,23 @@
         <div class="play-banner" id="playBanner">
           <div class="play-banner-title" id="bannerTitle">HOME RUN!</div>
           <div class="play-banner-desc" id="bannerDesc">Deep into the center pocket!</div>
+        </div>
+
+        <!-- Start Game Splash Overlay -->
+        <div class="start-overlay" id="startOverlay">
+          <div class="start-card">
+            <div class="start-badge">★ VINTAGE CARDBOARD ARCADE ★</div>
+            <h2 class="start-title">FLICK BASEBALL</h2>
+            <p class="start-subtitle">Pull the rubberband bat back & flick the ball into the outfield pockets!</p>
+            <button class="big-start-btn" id="bigStartBtn">
+              <span>▶</span> START GAME
+            </button>
+            <div class="start-hints">
+              <span>💡 <kbd>Space</kbd> Pitch</span>
+              <span>⚡ <kbd>F</kbd> Flick Bat</span>
+              <span>👋 <kbd>N</kbd> Nudge</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1023,6 +1140,36 @@
           gain.connect(this.ctx.destination);
           osc.start();
           osc.stop(this.ctx.currentTime + 0.25);
+        } catch(e) {}
+      }
+
+      // Ballpark Organ "Charge!" fanfare
+      playChargeFanfare() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          // Classic Charge melody notes: G4, C5, E5, G5, E5, G5
+          const notes = [
+            { f: 392.00, d: 0.12 },
+            { f: 523.25, d: 0.12 },
+            { f: 659.25, d: 0.12 },
+            { f: 783.99, d: 0.26 },
+            { f: 659.25, d: 0.12 },
+            { f: 783.99, d: 0.42 }
+          ];
+          let curTime = this.ctx.currentTime + 0.05;
+          notes.forEach(note => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(note.f, curTime);
+            gain.gain.setValueAtTime(0.25, curTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, curTime + note.d);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(curTime);
+            osc.stop(curTime + note.d + 0.02);
+            curTime += note.d + 0.04;
+          });
         } catch(e) {}
       }
     }
@@ -2558,9 +2705,31 @@
       document.getElementById('soundLabel').textContent = sounds.enabled ? 'Sound ON' : 'Sound OFF';
     });
 
+    // Start Game Function
+    function startGame() {
+      sounds.init();
+      sounds.playChargeFanfare();
+      document.getElementById('startOverlay').classList.add('hidden');
+      game.reset();
+      game.showBanner("PLAY BALL!", "Bottom 1st Inning • Batter Up!");
+      document.getElementById('announcerText').textContent = 
+        "PLAY BALL! Pull the rubberband bat back to flick! First pitch is rolling in!";
+      setTimeout(() => {
+        const mode = document.getElementById('pitchModeSelect').value;
+        if (mode === 'tee') {
+          game.ball.resetAtTee();
+        } else {
+          game.ball.pitchFromMound(mode);
+        }
+      }, 1000);
+    }
+
+    document.getElementById('bigStartBtn').addEventListener('click', startGame);
+    document.getElementById('headerStartBtn').addEventListener('click', startGame);
+
     // Reset button
     document.getElementById('resetGameBtn').addEventListener('click', () => {
-      game.reset();
+      startGame();
     });
 
     // Help modal
@@ -2571,6 +2740,7 @@
     document.getElementById('closeHelpBtn').addEventListener('click', () => {
       sounds.init();
       helpModal.classList.remove('open');
+      startGame();
     });
 
     /* =========================================================================
