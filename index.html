@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cardboard Flick Baseball - Authentic Physics Arcade</title>
+  <meta name="description" content="A physics-based baseball game inspired by a homemade cardboard and rubberband flick game. Swing the bat, flick the ball into pocket dividers, and score home runs!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Graduate&family=Outfit:wght@400;600;800;900&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cardboard-base: #c59b67;
+      --cardboard-dark: #9e7543;
+      --cardboard-light: #d6ad7a;
+      --cardboard-rim: #6e4e29;
+      --green-field: #699e69;
+      --pocket-orange: #f28538;
+      --pocket-purple: #9661a8;
+      --pocket-yellow: #deb336;
+      --pocket-blue: #7ba6c4;
+      --pocket-pink: #e65c78;
+      --tape-white: rgba(245, 243, 235, 0.92);
+      --tape-shadow: rgba(40, 25, 10, 0.25);
+      --bg-quilt: #2b3542;
+      --accent-gold: #f8c233;
+      --text-dark: #22170d;
+      --font-marker: 'Permanent Marker', cursive, sans-serif;
+      --font-hand: 'Caveat', cursive, sans-serif;
+      --font-score: 'Graduate', monospace, sans-serif;
+      --font-ui: 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-quilt);
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(45deg, #1f2731 25%, transparent 25%, transparent 75%, #1f2731 75%, #1f2731),
+        linear-gradient(45deg, #1f2731 25%, #283340 25%, #283340 75%, #1f2731 75%, #1f2731);
+      background-size: 40px 40px, 60px 60px, 60px 60px;
+      background-position: 0 0, 0 0, 30px 30px;
+      color: #fff;
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+
+    /* Header & Navigation Bar */
+    header {
+      width: 100%;
+      max-width: 1020px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px 16px;
+      background: rgba(18, 23, 30, 0.75);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .title-icon {
+      font-size: 28px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+
+    h1 {
+      font-family: var(--font-marker);
+      font-size: 1.55rem;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 2px 2px 0px #000, 0 0 12px rgba(248, 194, 51, 0.5);
+    }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: #9cb1c9;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button.icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f0f4f8;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    button.icon-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    button.icon-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Main Container */
+    .game-layout {
+      width: 100%;
+      max-width: 1020px;
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 880px) {
+      .game-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Board Area */
+    .board-wrapper {
+      position: relative;
+      background: #11151a;
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.7),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-width: 650px;
+      max-height: 650px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 
+        0 14px 30px rgba(0,0,0,0.6),
+        inset 0 0 15px rgba(0,0,0,0.8);
+      touch-action: none;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    #gameCanvas.dragging {
+      cursor: grabbing;
+    }
+
+    /* Action Toolbar below board */
+    .board-toolbar {
+      width: 100%;
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pitch-btn {
+      background: linear-gradient(135deg, #e63946, #c1121f);
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 30px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      font-family: var(--font-ui);
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(230, 57, 70, 0.45);
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pitch-btn:hover {
+      background: linear-gradient(135deg, #f24e5b, #d91c29);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(230, 57, 70, 0.6);
+    }
+
+    .pitch-btn:active {
+      transform: translateY(1px);
+    }
+
+    .select-dropdown {
+      background: #1d2530;
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-dropdown:hover {
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* Sidebar Scoreboard & Dashboard */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Cardboard DIY Scoreboard */
+    .scoreboard-card {
+      background: #c59b67;
+      background-image: 
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.03) 0px, rgba(0, 0, 0, 0.03) 2px, transparent 2px, transparent 4px);
+      border-radius: 16px;
+      border: 5px solid #8c5d31;
+      padding: 14px;
+      color: #24170a;
+      box-shadow: 
+        0 12px 30px rgba(0, 0, 0, 0.5),
+        inset 0 0 12px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    /* DIY Tape details on scoreboard */
+    .scoreboard-card::before {
+      content: '';
+      position: absolute;
+      top: -9px;
+      left: 25px;
+      width: 50px;
+      height: 18px;
+      background: rgba(250, 245, 230, 0.88);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transform: rotate(-3deg);
+    }
+
+    .scoreboard-card::after {
+      content: '';
+      position: absolute;
+      top: -9px;
+      right: 25px;
+      width: 50px;
+      height: 18px;
+      background: rgba(250, 245, 230, 0.88);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transform: rotate(4deg);
+    }
+
+    .scoreboard-header {
+      text-align: center;
+      border-bottom: 2px dashed #7d5227;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .scoreboard-title {
+      font-family: var(--font-marker);
+      font-size: 1.25rem;
+      letter-spacing: 1px;
+      color: #2b1807;
+      text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    /* Scoreboard Table */
+    .score-matrix {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-family: var(--font-score);
+      background: #181c22;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.7);
+      border: 2px solid #3c2a18;
+    }
+
+    .score-matrix th, .score-matrix td {
+      padding: 6px 4px;
+      text-align: center;
+      color: #cbd5e1;
+      font-size: 0.82rem;
+    }
+
+    .score-matrix th {
+      background: #111418;
+      color: #94a3b8;
+      font-weight: 700;
+      border-bottom: 1px solid #2d3748;
+    }
+
+    .score-matrix td.score-val {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #f8c233;
+      text-shadow: 0 0 6px rgba(248, 194, 51, 0.6);
+    }
+
+    .score-matrix tr.active-team {
+      background: rgba(248, 194, 51, 0.12);
+    }
+
+    /* Count & Outs indicators */
+    .count-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .count-box {
+      background: rgba(255, 255, 255, 0.45);
+      border: 2px solid #84572b;
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .count-label {
+      font-family: var(--font-marker);
+      font-size: 0.95rem;
+      color: #3b200b;
+    }
+
+    .count-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #4a3420;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+    }
+
+    .dot.strike-lit {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+
+    .dot.out-lit {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+
+    /* Diamond & Runners Graphic */
+    .runners-display {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      margin: 0 auto 12px;
+    }
+
+    .diamond-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 82px;
+      height: 82px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      border: 3px dashed #6f4722;
+      background: rgba(105, 158, 105, 0.4);
+      border-radius: 6px;
+    }
+
+    .base-node {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      background: #faf3e0;
+      border: 2px solid #633f1a;
+      border-radius: 3px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .base-node.active-runner {
+      background: #e63946;
+      border-color: #ffe3e3;
+      box-shadow: 0 0 12px #e63946, 0 3px 6px rgba(0,0,0,0.4);
+      transform: translate(-50%, -50%) rotate(45deg) scale(1.15);
+    }
+
+    .base-node.active-runner::after {
+      content: '⚾';
+      transform: rotate(-45deg);
+      font-size: 13px;
+    }
+
+    .base-home { top: 92%; left: 50%; }
+    .base-1st { top: 50%; left: 92%; }
+    .base-2nd { top: 8%; left: 50%; }
+    .base-3rd { top: 50%; left: 8%; }
+
+    /* Live Ticker & Play Announcement */
+    .announcer-card {
+      background: #1e2632;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+
+    .announcer-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .announcer-text {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      line-height: 1.35;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    /* Pocket Legend in Sidebar */
+    .legend-card {
+      background: rgba(20, 26, 34, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .legend-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #e2e8f0;
+    }
+
+    .color-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.4);
+    }
+
+    /* Modal Instructions */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 12, 0.75);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-dialog {
+      background: #c59b67;
+      background-image: 
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.04) 0px, rgba(0, 0, 0, 0.04) 3px, transparent 3px, transparent 6px);
+      border: 6px solid #7d5227;
+      border-radius: 18px;
+      max-width: 520px;
+      width: 100%;
+      padding: 24px;
+      color: #2b1807;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    .modal-dialog h2 {
+      font-family: var(--font-marker);
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+      text-align: center;
+      text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .modal-dialog p {
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .modal-dialog ul {
+      margin: 10px 0 18px 22px;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .close-modal-btn {
+      display: block;
+      margin: 0 auto;
+      background: #7d5227;
+      color: #fff;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 24px;
+      font-family: var(--font-marker);
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .close-modal-btn:hover {
+      background: #5b3a1a;
+      transform: scale(1.05);
+    }
+
+    /* Banner Overlay on Big Plays */
+    .play-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.6);
+      background: rgba(15, 20, 26, 0.92);
+      border: 3px solid var(--accent-gold);
+      border-radius: 16px;
+      padding: 16px 32px;
+      color: #fff;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 50;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .play-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .play-banner-title {
+      font-family: var(--font-marker);
+      font-size: 2.2rem;
+      color: var(--accent-gold);
+      text-shadow: 0 0 14px rgba(248, 194, 51, 0.8);
+    }
+
+    .play-banner-desc {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="title-group">
+      <span class="title-icon">⚾</span>
+      <div>
+        <h1>FLICK BASEBALL</h1>
+        <div class="subtitle">Handcrafted Cardboard & Rubberband Arcade</div>
+      </div>
+    </div>
+    <div class="top-controls">
+      <button class="icon-btn" id="soundToggleBtn" title="Toggle Sound">
+        <span id="soundIcon">🔊</span> <span id="soundLabel">Sound ON</span>
+      </button>
+      <button class="icon-btn" id="helpBtn" title="How to Play">
+        <span>📖</span> Rules
+      </button>
+      <button class="icon-btn" id="resetGameBtn" title="New Game">
+        <span>🔄</span> Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Game Workspace -->
+  <div class="game-layout">
+
+    <!-- Cardboard Box Arena & Controls -->
+    <div class="board-wrapper">
+      <div class="canvas-container" id="canvasContainer">
+        <canvas id="gameCanvas" width="900" height="900"></canvas>
+        <div class="play-banner" id="playBanner">
+          <div class="play-banner-title" id="bannerTitle">HOME RUN!</div>
+          <div class="play-banner-desc" id="bannerDesc">Deep into the center pocket!</div>
+        </div>
+      </div>
+
+      <!-- Action Toolbar below the arena -->
+      <div class="board-toolbar">
+        <div class="action-group">
+          <button class="pitch-btn" id="pitchBtn" title="Roll ball from the pitcher's mound">
+            <span>⚾</span> PITCH BALL [Space]
+          </button>
+          <button class="icon-btn" id="nudgeBtn" title="Nudge the box if ball gets stuck">
+            <span>👋</span> Nudge Box
+          </button>
+        </div>
+
+        <div class="action-group">
+          <label for="pitchModeSelect" style="font-size: 0.82rem; color: #94a3b8; font-weight: 600;">Pitch Mode:</label>
+          <select id="pitchModeSelect" class="select-dropdown">
+            <option value="straight">Fastball (Straight)</option>
+            <option value="curve">Curveball (Spin)</option>
+            <option value="changeup">Changeup (Slow)</option>
+            <option value="tee">Batting Tee (Stationary)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar: Real-time Scoreboard & Diamond -->
+    <div class="sidebar">
+
+      <!-- Authentic Cardboard DIY Scoreboard -->
+      <div class="scoreboard-card">
+        <div class="scoreboard-header">
+          <div class="scoreboard-title">★ INNING SCOREBOARD ★</div>
+        </div>
+
+        <!-- 9-Inning Line Score Table -->
+        <table class="score-matrix">
+          <thead>
+            <tr>
+              <th>TEAM</th>
+              <th>1</th><th>2</th><th>3</th>
+              <th>R</th><th>H</th><th>E</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="visitorRow">
+              <td style="font-weight: 800; color:#e2e8f0;">AWAY</td>
+              <td id="v1">0</td><td id="v2">-</td><td id="v3">-</td>
+              <td class="score-val" id="visitorRuns">0</td>
+              <td id="visitorHits">0</td>
+              <td id="visitorErrors">0</td>
+            </tr>
+            <tr id="homeRow" class="active-team">
+              <td style="font-weight: 800; color:#f8c233;">HOME</td>
+              <td id="h1">0</td><td id="h2">-</td><td id="h3">-</td>
+              <td class="score-val" id="homeRuns">0</td>
+              <td id="homeHits">0</td>
+              <td id="homeErrors">0</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Count & Outs Matrix -->
+        <div class="count-grid">
+          <div class="count-box">
+            <span class="count-label">STRIKES</span>
+            <div class="count-dots">
+              <div class="dot" id="strike1"></div>
+              <div class="dot" id="strike2"></div>
+            </div>
+          </div>
+          <div class="count-box">
+            <span class="count-label">OUTS</span>
+            <div class="count-dots">
+              <div class="dot" id="out1"></div>
+              <div class="dot" id="out2"></div>
+              <div class="dot" id="out3"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diamond Runner Tracker -->
+        <div class="runners-display">
+          <div class="diamond-bg"></div>
+          <div class="base-node base-home" id="nodeHome" title="Home Plate"></div>
+          <div class="base-node base-1st" id="node1st" title="1st Base"></div>
+          <div class="base-node base-2nd" id="node2nd" title="2nd Base"></div>
+          <div class="base-node base-3rd" id="node3rd" title="3rd Base"></div>
+        </div>
+
+        <div style="text-align: center; font-size: 0.85rem; font-weight: 800; color: #442a12;">
+          INNING: <span id="inningDisplay" style="color: #922222;">BOTTOM 1st</span>
+        </div>
+      </div>
+
+      <!-- Live Announcer & Radar Gun -->
+      <div class="announcer-card">
+        <div class="announcer-label">
+          <span>Official Play-by-Play</span>
+          <span id="liveRadar">0 MPH</span>
+        </div>
+        <div class="announcer-text" id="announcerText">
+          Pull back the rubberband bat to flick! Press [PITCH] or [Space] when ready!
+        </div>
+        <div class="stats-row">
+          <span>Exit Velo: <strong class="stat-pill" id="statVelo">--</strong></span>
+          <span>Distance: <strong class="stat-pill" id="statDist">--</strong></span>
+          <span>Last Play: <strong class="stat-pill" id="statPlay">Ready</strong></span>
+        </div>
+      </div>
+
+      <!-- Outfield Pockets Legend based on Image -->
+      <div class="legend-card">
+        <div class="legend-title">Pocket Targets</div>
+        <div class="legend-grid">
+          <div class="legend-item"><span class="color-swatch" style="background:var(--pocket-pink);"></span> HR (Corner)</div>
+          <div class="legend-item"><span class="color-swatch" style="background:var(--pocket-blue);"></span> Out / Foul</div>
+          <div class="legend-item"><span class="color-swatch" style="background:var(--pocket-yellow);"></span> 3rd Base (Triple)</div>
+          <div class="legend-item"><span class="color-swatch" style="background:var(--pocket-purple);"></span> 2nd Base (Double)</div>
+          <div class="legend-item"><span class="color-swatch" style="background:var(--pocket-orange);"></span> 1st Base (Single)</div>
+          <div class="legend-item"><span class="color-swatch" style="background:#543a21; border-color:#fff;"></span> Infield Hole (Out)</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Rules / Specs Dialog Modal -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal-dialog">
+      <h2>HOW TO PLAY</h2>
+      <p>
+        Welcome to <strong>Cardboard Flick Baseball</strong>, built directly from the real DIY cardboard prototype!
+      </p>
+      <ul>
+        <li><strong>Swing the Bat:</strong> Click/drag the duct-tape wrapped bat backwards against the purple rubberband to build tension, then release to flick!</li>
+        <li><strong>Pitch the Ball:</strong> Click <em>PITCH BALL</em> (or press <kbd>Space</kbd> / <kbd>P</kbd>) to roll a ball from the center mound slot toward home plate.</li>
+        <li><strong>Aim for Pockets:</strong>
+          <ul>
+            <li><span style="color:#e65c78; font-weight:bold;">Pink HR:</span> Corner pocket = HOME RUN! Clears the bases.</li>
+            <li><span style="color:#d8aa35; font-weight:bold;">Yellow 3rd Base:</span> Triple = Advance runners 3 bases.</li>
+            <li><span style="color:#9661a8; font-weight:bold;">Purple 2nd Base:</span> Double = Advance runners 2 bases.</li>
+            <li><span style="color:#f28538; font-weight:bold;">Orange 1st Base:</span> Single = Advance runners 1 base.</li>
+            <li><span style="color:#7ba6c4; font-weight:bold;">Light Blue Out / Infield Hole:</span> Adds an Out. 3 Outs ends the half-inning!</li>
+          </ul>
+        </li>
+        <li><strong>Keyboard Shortcuts:</strong> <kbd>Space</kbd> = Pitch, <kbd>N</kbd> = Nudge box, <kbd>R</kbd> = Reset ball.</li>
+      </ul>
+      <button class="close-modal-btn" id="closeHelpBtn">PLAY BALL!</button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       CARDBOARD FLICK BASEBALL - COMPLETE PHYSICS ENGINE & GAME SYSTEM
+       ========================================================================= */
+
+    // Web Audio Synthesizer for rich DIY sound effects
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Rubberband stretch tension sound
+      playStretch(pitchRatio) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          const baseFreq = 80 + pitchRatio * 180;
+          osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq + 40, this.ctx.currentTime + 0.05);
+
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.06);
+        } catch(e) {}
+      }
+
+      // Rubberband release snap ("twang/thwack")
+      playSnap() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.12);
+
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        } catch(e) {}
+      }
+
+      // Crisp bat strike ("CRACK!")
+      playBatHit(intensity) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const t = this.ctx.currentTime;
+          // Noise pop for impact crack
+          const bufferSize = this.ctx.sampleRate * 0.04;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2));
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 1600;
+          filter.Q.value = 3.0;
+
+          // Resonant wooden tone
+          const osc = this.ctx.createOscillator();
+          const oscGain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(680, t);
+          osc.frequency.exponentialRampToValueAtTime(240, t + 0.09);
+
+          const vol = Math.min(1.0, 0.2 + intensity * 0.08);
+          oscGain.gain.setValueAtTime(vol * 0.6, t);
+          oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(vol * 0.8, t);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+          noise.connect(filter);
+          filter.connect(noiseGain);
+          noiseGain.connect(this.ctx.destination);
+
+          osc.connect(oscGain);
+          oscGain.connect(this.ctx.destination);
+
+          noise.start(t);
+          osc.start(t);
+          osc.stop(t + 0.1);
+        } catch(e) {}
+      }
+
+      // Cardboard bounce thud
+      playWallBounce(speed) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.07);
+
+          const vol = Math.min(0.25, speed * 0.03);
+          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.07);
+        } catch(e) {}
+      }
+
+      // Pocket landing chime
+      playPocket(type) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const notes = {
+            'hr': [523.25, 659.25, 783.99, 1046.5], // High fanfare C E G C
+            'triple': [440, 554.37, 659.25], // A C# E
+            'double': [392, 493.88], // G B
+            'single': [349.23, 440], // F A
+            'out': [196, 174.61] // Low descending
+          }[type] || [392];
+
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = (type === 'hr') ? 'triangle' : 'sine';
+            const startTime = this.ctx.currentTime + idx * 0.09;
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            gain.gain.setValueAtTime(0.2, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.36);
+          });
+        } catch(e) {}
+      }
+
+      // Ball rolling noise loop / pulse
+      playPitchRoll() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(260, this.ctx.currentTime + 0.25);
+
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.25);
+        } catch(e) {}
+      }
+    }
+
+    const sounds = new SoundEngine();
+
+    /* =========================================================================
+       BOARD GEOMETRY & GAME COORDINATE SYSTEM
+       The cardboard box prototype from specs/flick_bball.jpeg:
+       - Square cardboard box.
+       - Home plate is at the TOP-RIGHT corner.
+       - Foul line 1 runs down the right wall (to 1st base side).
+       - Foul line 2 runs across the top wall (to 3rd base side).
+       - Infield diamond with 4 bases made of white masking tape.
+       - Center mound hole cutout angled towards home plate.
+       - 9 Outfield pockets arranged along the LEFT wall and BOTTOM wall:
+           Left wall (top to bottom):
+             1. 1st Base (Orange)
+             2. 2nd Base (Purple)
+             3. 3rd Base (Yellow)
+             4. Out (Light Blue)
+           Corner (bottom-left):
+             5. HOME RUN (Pink)
+           Bottom wall (left to right):
+             6. Out (Light Blue)
+             7. 3rd Base (Yellow)
+             8. 2nd Base (Purple)
+             9. 1st Base (Orange)
+       - Bat mechanism at Home Plate (top right):
+           Duct tape wrapped cardboard bat pivoting on an anchor pin,
+           connected to a purple rubberband anchored to a screw!
+       ========================================================================= */
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Box dimensions in virtual physics space (900 x 900)
+    const BOARD_SIZE = 900;
+    const PADDING = 60; // Cardboard box outer rim thickness
+    const INNER_LEFT = PADDING;
+    const INNER_RIGHT = BOARD_SIZE - PADDING;
+    const INNER_TOP = PADDING;
+    const INNER_BOTTOM = BOARD_SIZE - PADDING;
+    const INNER_SIZE = INNER_RIGHT - INNER_LEFT; // 780
+
+    // Diamond landmarks
+    const HOME_PLATE = { x: INNER_RIGHT - 110, y: INNER_TOP + 110 };
+    const BASE_1ST = { x: INNER_RIGHT - 110, y: INNER_BOTTOM - 260 };
+    const BASE_3RD = { x: INNER_LEFT + 260, y: INNER_TOP + 110 };
+    const BASE_2ND = { x: INNER_LEFT + 260, y: INNER_BOTTOM - 260 };
+    const PITCHER_MOUND = { 
+      x: (HOME_PLATE.x + BASE_2ND.x) / 2 + 15, 
+      y: (HOME_PLATE.y + BASE_2ND.y) / 2 + 15 
+    };
+
+    // Cardboard Dividers & Pockets Setup
+    // Pockets on Left wall (4 pockets) and Bottom wall (4 pockets) + Corner HR (1 pocket) = 9 pockets total
+    const POCKET_DEPTH = 135; // depth of pockets extending into the field
+
+    const pockets = [
+      // Left wall: from top to bottom
+      { id: 'left_1st', name: '1st Base', type: 'single', color: '#f28538', textColor: '#1a0e05',
+        bounds: { x1: INNER_LEFT, y1: INNER_TOP, x2: INNER_LEFT + POCKET_DEPTH, y2: INNER_TOP + 150 },
+        label: '1st base', labelPos: { x: INNER_LEFT + 55, y: INNER_TOP + 80, rot: -Math.PI/2 } },
+      { id: 'left_2nd', name: '2nd Base', type: 'double', color: '#9661a8', textColor: '#ffffff',
+        bounds: { x1: INNER_LEFT, y1: INNER_TOP + 150, x2: INNER_LEFT + POCKET_DEPTH, y2: INNER_TOP + 300 },
+        label: '2 bs', labelPos: { x: INNER_LEFT + 55, y: INNER_TOP + 230, rot: -Math.PI/2 } },
+      { id: 'left_3rd', name: '3rd Base', type: 'triple', color: '#deb336', textColor: '#1a0e05',
+        bounds: { x1: INNER_LEFT, y1: INNER_TOP + 300, x2: INNER_LEFT + POCKET_DEPTH, y2: INNER_TOP + 450 },
+        label: '3rd base', labelPos: { x: INNER_LEFT + 55, y: INNER_TOP + 380, rot: -Math.PI/2 } },
+      { id: 'left_out', name: 'Out', type: 'out', color: '#7ba6c4', textColor: '#1a0e05',
+        bounds: { x1: INNER_LEFT, y1: INNER_TOP + 450, x2: INNER_LEFT + POCKET_DEPTH, y2: INNER_BOTTOM - POCKET_DEPTH },
+        label: 'Out', labelPos: { x: INNER_LEFT + 55, y: INNER_TOP + 540, rot: -Math.PI/2 } },
+
+      // Corner Pocket: HOME RUN!
+      { id: 'corner_hr', name: 'HOME RUN!', type: 'hr', color: '#e65c78', textColor: '#ffffff',
+        bounds: { x1: INNER_LEFT, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_LEFT + POCKET_DEPTH, y2: INNER_BOTTOM },
+        label: 'HR', labelPos: { x: INNER_LEFT + 70, y: INNER_BOTTOM - 65, rot: -Math.PI/4 } },
+
+      // Bottom wall: from left to right
+      { id: 'bot_out', name: 'Out', type: 'out', color: '#7ba6c4', textColor: '#1a0e05',
+        bounds: { x1: INNER_LEFT + POCKET_DEPTH, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_LEFT + POCKET_DEPTH + 140, y2: INNER_BOTTOM },
+        label: '+ Out', labelPos: { x: INNER_LEFT + POCKET_DEPTH + 70, y: INNER_BOTTOM - 60, rot: 0 } },
+      { id: 'bot_3rd', name: '3rd Base', type: 'triple', color: '#deb336', textColor: '#1a0e05',
+        bounds: { x1: INNER_LEFT + POCKET_DEPTH + 140, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_LEFT + POCKET_DEPTH + 280, y2: INNER_BOTTOM },
+        label: '3rd base', labelPos: { x: INNER_LEFT + POCKET_DEPTH + 210, y: INNER_BOTTOM - 60, rot: 0 } },
+      { id: 'bot_2nd', name: '2nd Base', type: 'double', color: '#9661a8', textColor: '#ffffff',
+        bounds: { x1: INNER_LEFT + POCKET_DEPTH + 280, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_LEFT + POCKET_DEPTH + 420, y2: INNER_BOTTOM },
+        label: '2 bs', labelPos: { x: INNER_LEFT + POCKET_DEPTH + 350, y: INNER_BOTTOM - 60, rot: 0 } },
+      { id: 'bot_1st', name: '1st Base', type: 'single', color: '#f28538', textColor: '#1a0e05',
+        bounds: { x1: INNER_LEFT + POCKET_DEPTH + 420, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_RIGHT, y2: INNER_BOTTOM },
+        label: '1st base', labelPos: { x: INNER_LEFT + POCKET_DEPTH + 510, y: INNER_BOTTOM - 60, rot: 0 } }
+    ];
+
+    // Cardboard Divider Walls (thick rigid segments with bouncy edges)
+    const dividers = [];
+
+    // Helper to add divider segments
+    function addDivider(x1, y1, x2, y2, thickness = 14) {
+      dividers.push({ x1, y1, x2, y2, thickness });
+    }
+
+    // Dividers on Left Wall
+    addDivider(INNER_LEFT, INNER_TOP + 150, INNER_LEFT + POCKET_DEPTH, INNER_TOP + 150);
+    addDivider(INNER_LEFT, INNER_TOP + 300, INNER_LEFT + POCKET_DEPTH, INNER_TOP + 300);
+    addDivider(INNER_LEFT, INNER_TOP + 450, INNER_LEFT + POCKET_DEPTH, INNER_TOP + 450);
+    addDivider(INNER_LEFT, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - POCKET_DEPTH);
+
+    // Dividers on Bottom Wall
+    addDivider(INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM);
+    addDivider(INNER_LEFT + POCKET_DEPTH + 140, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH + 140, INNER_BOTTOM);
+    addDivider(INNER_LEFT + POCKET_DEPTH + 280, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH + 280, INNER_BOTTOM);
+    addDivider(INNER_LEFT + POCKET_DEPTH + 420, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH + 420, INNER_BOTTOM);
+
+    // Corner divider post between left wall and bottom wall
+    addDivider(INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - POCKET_DEPTH + 1);
+
+    // Outer Cardboard Perimeter Walls
+    const outerWalls = [
+      { x1: INNER_LEFT, y1: INNER_TOP, x2: INNER_RIGHT, y2: INNER_TOP, normal: {x: 0, y: 1} },      // Top wall
+      { x1: INNER_RIGHT, y1: INNER_TOP, x2: INNER_RIGHT, y2: INNER_BOTTOM, normal: {x: -1, y: 0} },  // Right wall
+      { x1: INNER_RIGHT, y1: INNER_BOTTOM, x2: INNER_LEFT, y2: INNER_BOTTOM, normal: {x: 0, y: -1} }, // Bottom wall
+      { x1: INNER_LEFT, y1: INNER_BOTTOM, x2: INNER_LEFT, y2: INNER_TOP, normal: {x: 1, y: 0} }      // Left wall
+    ];
+
+    // Infield Pitcher Cutout Hole (Ground Out trap)
+    const PITCHER_HOLE = {
+      x: PITCHER_MOUND.x,
+      y: PITCHER_MOUND.y,
+      width: 48,
+      height: 90,
+      angle: Math.PI / 4 + 0.15 // angled toward home plate
+    };
+
+    /* =========================================================================
+       RUBBERBAND BAT MECHANISM
+       Modeled after specs/flick_bball.jpeg:
+       Cardboard bat wrapped in silver duct tape, pivoting near the top-right
+       corner of the box, with a purple rubber band looped to an anchor screw.
+       ========================================================================= */
+
+    class RubberbandBat {
+      constructor() {
+        // Pivot location: tucked in corner just outside home plate
+        this.pivot = { x: HOME_PLATE.x + 40, y: HOME_PLATE.y - 50 };
+        // Screw anchor location: drilled into cardboard below home plate
+        this.screw = { x: HOME_PLATE.x - 20, y: HOME_PLATE.y + 115 };
+
+        this.length = 160;
+        this.width = 24;
+        this.mass = 1.8;
+
+        // Angle in radians (0 is right, PI/2 is down, PI is left)
+        // Resting position: bat points down-left across the hitting zone
+        this.restAngle = Math.PI * 0.62;
+        // Pulled back against rubber band (pointing up-right)
+        this.minAngle = Math.PI * 0.18;
+        // Forward stop (physical cardboard limit)
+        this.maxAngle = Math.PI * 0.96;
+
+        this.angle = this.restAngle;
+        this.angularVel = 0;
+        this.angularAccel = 0;
+
+        // Elastic spring constant and damping
+        this.springK = 850.0;
+        this.damping = 18.0;
+
+        this.isDragging = false;
+        this.targetAngle = this.restAngle;
+
+        // Rubberband attachment point along bat from pivot
+        this.bandAttachmentDist = 85;
+      }
+
+      getTip() {
+        return {
+          x: this.pivot.x + Math.cos(this.angle) * this.length,
+          y: this.pivot.y + Math.sin(this.angle) * this.length
+        };
+      }
+
+      getBandBatPoint() {
+        return {
+          x: this.pivot.x + Math.cos(this.angle) * this.bandAttachmentDist,
+          y: this.pivot.y + Math.sin(this.angle) * this.bandAttachmentDist
+        };
+      }
+
+      updatePhysics(subDt) {
+        if (this.isDragging) {
+          // Smooth spring tracking to user's drag pointer
+          const diff = this.targetAngle - this.angle;
+          this.angularVel = diff * 32;
+          this.angle += this.angularVel * subDt;
+        } else {
+          // Accurate physical rubber band spring force & torque
+          const bandPt = this.getBandBatPoint();
+          const dx = this.screw.x - bandPt.x;
+          const dy = this.screw.y - bandPt.y;
+          const currentBandLen = Math.hypot(dx, dy);
+          const restBandLen = 70; // unstretched rubberband length
+
+          let springTorque = 0;
+          if (currentBandLen > restBandLen) {
+            // Hooke's Law + quadratic non-linear rubber elasticity
+            const stretch = currentBandLen - restBandLen;
+            const tension = this.springK * stretch * (1 + stretch * 0.015);
+            const fx = (dx / currentBandLen) * tension;
+            const fy = (dy / currentBandLen) * tension;
+
+            // Moment arm from pivot: r = bandPt - pivot
+            const rx = bandPt.x - this.pivot.x;
+            const ry = bandPt.y - this.pivot.y;
+            // 2D torque: rx * fy - ry * fx
+            springTorque = rx * fy - ry * fx;
+          }
+
+          // Damping torque opposing motion
+          const dampingTorque = -this.damping * this.angularVel;
+          this.angularAccel = (springTorque + dampingTorque) / this.mass;
+
+          this.angularVel += this.angularAccel * subDt;
+          this.angle += this.angularVel * subDt;
+
+          // Forward physical stopper
+          if (this.angle > this.maxAngle) {
+            this.angle = this.maxAngle;
+            if (this.angularVel > 0) {
+              this.angularVel = -this.angularVel * 0.25; // cardboard stopper rebound
+              sounds.playWallBounce(2.0);
+            }
+          }
+
+          // Back pull limit
+          if (this.angle < this.minAngle) {
+            this.angle = this.minAngle;
+            this.angularVel = 0;
+          }
+        }
+      }
+
+      draw(ctx) {
+        const tip = this.getTip();
+        const bandPt = this.getBandBatPoint();
+
+        // 1. Draw Purple Rubberband
+        ctx.save();
+        const stretchDist = Math.hypot(bandPt.x - this.screw.x, bandPt.y - this.screw.y);
+        const bandThickness = Math.max(3.5, 9 - (stretchDist - 70) * 0.035);
+        const strainRatio = Math.min(1.0, Math.max(0, (stretchDist - 70) / 160));
+
+        // Rubberband drop shadow
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.lineWidth = bandThickness + 3;
+        ctx.beginPath();
+        ctx.moveTo(this.screw.x + 4, this.screw.y + 6);
+        ctx.lineTo(bandPt.x + 4, bandPt.y + 6);
+        ctx.stroke();
+
+        // Rubberband body: purple transitioning to magenta under strain
+        const rVal = Math.round(135 + strainRatio * 85);
+        const gVal = Math.round(55 - strainRatio * 25);
+        const bVal = Math.round(180 + strainRatio * 45);
+        ctx.strokeStyle = `rgb(${rVal}, ${gVal}, ${bVal})`;
+        ctx.lineWidth = bandThickness;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.screw.x, this.screw.y);
+        ctx.lineTo(bandPt.x, bandPt.y);
+        ctx.stroke();
+
+        // Inner elastic sheen
+        ctx.strokeStyle = 'rgba(255, 230, 255, 0.45)';
+        ctx.lineWidth = Math.max(1, bandThickness * 0.3);
+        ctx.beginPath();
+        ctx.moveTo(this.screw.x, this.screw.y);
+        ctx.lineTo(bandPt.x, bandPt.y);
+        ctx.stroke();
+
+        // Looped knot around the screw
+        ctx.fillStyle = `rgb(${rVal}, ${gVal}, ${bVal})`;
+        ctx.beginPath();
+        ctx.arc(this.screw.x, this.screw.y, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 2. Draw Screw Anchor (just like photo)
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(this.screw.x + 3, this.screw.y + 4, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        const screwGrad = ctx.createRadialGradient(
+          this.screw.x - 2, this.screw.y - 2, 2,
+          this.screw.x, this.screw.y, 9
+        );
+        screwGrad.addColorStop(0, '#f8fafc');
+        screwGrad.addColorStop(0.6, '#94a3b8');
+        screwGrad.addColorStop(1, '#334155');
+        ctx.fillStyle = screwGrad;
+        ctx.beginPath();
+        ctx.arc(this.screw.x, this.screw.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Phillips / cross screw drive
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(this.screw.x - 5, this.screw.y - 3);
+        ctx.lineTo(this.screw.x + 5, this.screw.y + 3);
+        ctx.moveTo(this.screw.x - 3, this.screw.y + 5);
+        ctx.lineTo(this.screw.x + 3, this.screw.y - 5);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Bat Shadow
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 8;
+        ctx.shadowOffsetY = 12;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.translate(this.pivot.x, this.pivot.y);
+        ctx.rotate(this.angle);
+        ctx.beginPath();
+        ctx.roundRect(0, -this.width / 2, this.length, this.width, [this.width / 2]);
+        ctx.fill();
+        ctx.restore();
+
+        // 4. Duct Tape Bat Body (exact visual match for specs/flick_bball.jpeg)
+        ctx.save();
+        ctx.translate(this.pivot.x, this.pivot.y);
+        ctx.rotate(this.angle);
+
+        // Core cardboard bat
+        const batGrad = ctx.createLinearGradient(0, -this.width/2, 0, this.width/2);
+        batGrad.addColorStop(0, '#e2e8f0');
+        batGrad.addColorStop(0.25, '#94a3b8');
+        batGrad.addColorStop(0.7, '#64748b');
+        batGrad.addColorStop(1, '#334155');
+        ctx.fillStyle = batGrad;
+        ctx.beginPath();
+        ctx.roundRect(0, -this.width/2, this.length, this.width, [6, 12, 12, 6]);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Silver duct tape wraps with metallic specular highlights & tape folds
+        for (let x = 16; x < this.length - 12; x += 18) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.26)';
+          ctx.beginPath();
+          ctx.rect(x, -this.width/2, 12, this.width);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(x + 2, -this.width/2);
+          ctx.lineTo(x + 9, this.width/2);
+          ctx.stroke();
+        }
+
+        // Bat handle grip tape near pivot
+        ctx.fillStyle = '#784620';
+        ctx.fillRect(4, -this.width/2 + 2, 28, this.width - 4);
+
+        // Rubberband anchor hole & loop on bat
+        ctx.fillStyle = '#9333ea';
+        ctx.beginPath();
+        ctx.arc(this.bandAttachmentDist, 0, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#581c87';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Pivot bolt & washer
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f1f5f9';
+        ctx.beginPath();
+        ctx.arc(-1, -1, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    /* =========================================================================
+       BALL PHYSICS & STATES
+       ========================================================================= */
+
+    class Ball {
+      constructor() {
+        this.radius = 12;
+        this.x = HOME_PLATE.x - 30;
+        this.y = HOME_PLATE.y + 30;
+        this.vx = 0;
+        this.vy = 0;
+        this.mass = 1.0;
+        this.restitution = 0.65; // cardboard bounciness
+        this.friction = 0.988;   // gentle rolling resistance
+
+        this.inPlay = false;
+        this.settledInPocket = null;
+        this.settleTimer = 0;
+        this.trail = [];
+        this.isPitched = false;
+        this.pitchTarget = null;
+        this.inPitcherHole = false;
+      }
+
+      resetAtTee() {
+        this.x = HOME_PLATE.x - 45;
+        this.y = HOME_PLATE.y + 40;
+        this.vx = 0;
+        this.vy = 0;
+        this.inPlay = true;
+        this.settledInPocket = null;
+        this.settleTimer = 0;
+        this.trail = [];
+        this.isPitched = false;
+        this.inPitcherHole = false;
+      }
+
+      pitchFromMound(mode = 'straight') {
+        this.x = PITCHER_MOUND.x;
+        this.y = PITCHER_MOUND.y;
+        this.inPitcherHole = false;
+        this.settledInPocket = null;
+        this.settleTimer = 0;
+        this.inPlay = true;
+        this.isPitched = true;
+        this.trail = [];
+
+        // Calculate pitch vector towards hitting zone near home plate
+        const targetX = HOME_PLATE.x - 40 + (Math.random() * 16 - 8);
+        const targetY = HOME_PLATE.y + 35 + (Math.random() * 16 - 8);
+        const dx = targetX - this.x;
+        const dy = targetY - this.y;
+        const dist = Math.hypot(dx, dy);
+
+        let speed = 260; // pixels per sec
+        if (mode === 'changeup') speed = 175;
+        if (mode === 'straight') speed = 290;
+
+        this.vx = (dx / dist) * speed;
+        this.vy = (dy / dist) * speed;
+
+        // Apply curve spin if selected
+        this.spin = (mode === 'curve') ? (Math.random() > 0.5 ? 140 : -140) : 0;
+
+        sounds.playPitchRoll();
+      }
+
+      subUpdate(subDt, bat) {
+        if (!this.inPlay && !this.inPitcherHole) return;
+
+        // Handle ball falling into pitcher's hole
+        if (this.inPitcherHole) {
+          this.vx *= 0.82;
+          this.vy *= 0.82;
+          this.radius = Math.max(2, this.radius - 0.4);
+          this.x += this.vx * subDt;
+          this.y += this.vy * subDt;
+          return;
+        }
+
+        // Apply curve spin acceleration
+        if (this.spin && this.isPitched) {
+          const speed = Math.hypot(this.vx, this.vy);
+          if (speed > 40) {
+            this.vx += (-this.vy / speed) * this.spin * subDt;
+            this.vy += (this.vx / speed) * this.spin * subDt;
+          }
+        }
+
+        // Rolling friction damping
+        const subFriction = Math.pow(this.friction, subDt * 60);
+        this.vx *= subFriction;
+        this.vy *= subFriction;
+
+        // Position integration
+        this.x += this.vx * subDt;
+        this.y += this.vy * subDt;
+
+        // Check collision with bat
+        this.checkBatCollision(bat);
+
+        // Check collisions with cardboard pocket dividers
+        this.checkDividersCollision();
+
+        // Check boundary walls
+        this.checkWallCollisions();
+
+        // Check pitcher hole trap
+        this.checkPitcherHole();
+      }
+
+      postUpdate(dt) {
+        if (!this.inPlay && !this.inPitcherHole) return;
+
+        // Maintain ball trail for visual juice
+        const speed = Math.hypot(this.vx, this.vy);
+        if (speed > 50) {
+          this.trail.push({ x: this.x, y: this.y, alpha: 0.7 });
+          if (this.trail.length > 14) this.trail.shift();
+        } else if (this.trail.length > 0) {
+          this.trail.shift();
+        }
+
+        // Check if settled in an outfield pocket
+        this.checkPocketCapture(dt);
+      }
+
+      checkBatCollision(bat) {
+        // Line capsule collision with rotating bat
+        const p1 = bat.pivot;
+        const p2 = bat.getTip();
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const lenSq = dx * dx + dy * dy;
+
+        // Project ball center onto bat segment
+        let t = ((this.x - p1.x) * dx + (this.y - p1.y) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+
+        const closestX = p1.x + t * dx;
+        const closestY = p1.y + t * dy;
+
+        const dist = Math.hypot(this.x - closestX, this.y - closestY);
+        const minDist = this.radius + bat.width / 2;
+
+        if (dist < minDist) {
+          // Collision normal
+          let nx = (this.x - closestX) / (dist || 1);
+          let ny = (this.y - closestY) / (dist || 1);
+
+          // Bat surface linear velocity at impact point: v = omega x r
+          const rDist = t * bat.length;
+          const batSpeed = bat.angularVel * rDist;
+          // Perpendicular velocity vector of the bat at impact
+          const bvx = -Math.sin(bat.angle) * batSpeed;
+          const bvy = Math.cos(bat.angle) * batSpeed;
+
+          // Relative velocity
+          const relVx = this.vx - bvx;
+          const relVy = this.vy - bvy;
+
+          const velAlongNormal = relVx * nx + relVy * ny;
+
+          // If moving towards each other, resolve impact impulse
+          if (velAlongNormal < 0) {
+            const restitution = 0.88; // Crisp pop off silver duct tape
+            const impulse = -(1 + restitution) * velAlongNormal;
+
+            this.vx += nx * impulse + bvx * 1.15;
+            this.vy += ny * impulse + bvy * 1.15;
+
+            // Separate bodies to prevent sticking
+            const overlap = minDist - dist;
+            this.x += nx * overlap;
+            this.y += ny * overlap;
+
+            // Mark ball as hit in play
+            this.isPitched = false;
+
+            const hitSpeed = Math.hypot(this.vx, this.vy);
+            sounds.playBatHit(hitSpeed * 0.0035);
+
+            // Trigger exit velo & announcer feedback
+            game.onBatHit(hitSpeed);
+          }
+        }
+      }
+
+      checkDividersCollision() {
+        for (const div of dividers) {
+          const dx = div.x2 - div.x1;
+          const dy = div.y2 - div.y1;
+          const lenSq = dx * dx + dy * dy;
+
+          let t = lenSq === 0 ? 0 : ((this.x - div.x1) * dx + (this.y - div.y1) * dy) / lenSq;
+          t = Math.max(0, Math.min(1, t));
+
+          const cx = div.x1 + t * dx;
+          const cy = div.y1 + t * dy;
+
+          const dist = Math.hypot(this.x - cx, this.y - cy);
+          const minDist = this.radius + div.thickness / 2;
+
+          if (dist < minDist) {
+            const nx = (this.x - cx) / (dist || 1);
+            const ny = (this.y - cy) / (dist || 1);
+
+            const vDotN = this.vx * nx + this.vy * ny;
+            if (vDotN < 0) {
+              this.vx = (this.vx - (1 + this.restitution) * vDotN * nx);
+              this.vy = (this.vy - (1 + this.restitution) * vDotN * ny);
+
+              sounds.playWallBounce(Math.hypot(this.vx, this.vy) * 0.005);
+            }
+
+            const overlap = minDist - dist;
+            this.x += nx * overlap;
+            this.y += ny * overlap;
+          }
+        }
+      }
+
+      checkWallCollisions() {
+        // Outer Cardboard Wall bounds
+        if (this.x - this.radius < INNER_LEFT) {
+          this.x = INNER_LEFT + this.radius;
+          this.vx = -this.vx * this.restitution;
+          sounds.playWallBounce(Math.abs(this.vx) * 0.005);
+        }
+        if (this.x + this.radius > INNER_RIGHT) {
+          this.x = INNER_RIGHT - this.radius;
+          this.vx = -this.vx * this.restitution;
+          sounds.playWallBounce(Math.abs(this.vx) * 0.005);
+        }
+        if (this.y - this.radius < INNER_TOP) {
+          this.y = INNER_TOP + this.radius;
+          this.vy = -this.vy * this.restitution;
+          sounds.playWallBounce(Math.abs(this.vy) * 0.005);
+        }
+        if (this.y + this.radius > INNER_BOTTOM) {
+          this.y = INNER_BOTTOM - this.radius;
+          this.vy = -this.vy * this.restitution;
+          sounds.playWallBounce(Math.abs(this.vy) * 0.005);
+        }
+      }
+
+      checkPitcherHole() {
+        // If ball rolls over the center pitcher mound slot at moderate speed
+        if (this.isPitched) return; // Don't trap while rolling out of the hole!
+
+        const dx = this.x - PITCHER_HOLE.x;
+        const dy = this.y - PITCHER_HOLE.y;
+        // Check inside rotated hole rect
+        const cos = Math.cos(-PITCHER_HOLE.angle);
+        const sin = Math.sin(-PITCHER_HOLE.angle);
+        const localX = cos * dx - sin * dy;
+        const localY = sin * dx + cos * dy;
+
+        if (Math.abs(localX) < PITCHER_HOLE.width / 2 && Math.abs(localY) < PITCHER_HOLE.height / 2) {
+          const speed = Math.hypot(this.vx, this.vy);
+          if (speed < 380) { // Sucked into hole
+            this.inPitcherHole = true;
+            this.inPlay = false;
+            sounds.playPocket('out');
+            game.handleOutcome('pitcher_out', 'Ground Out to Pitcher!');
+          }
+        }
+      }
+
+      checkPocketCapture(dt) {
+        if (!this.inPlay || this.settledInPocket) return;
+
+        const speed = Math.hypot(this.vx, this.vy);
+
+        // Check if inside any pocket bounds
+        for (const pocket of pockets) {
+          const b = pocket.bounds;
+          if (this.x >= b.x1 && this.x <= b.x2 && this.y >= b.y1 && this.y <= b.y2) {
+            // If ball slows down or stays in pocket for a moment, settle it
+            if (speed < 90) {
+              this.settleTimer += dt;
+              if (this.settleTimer > 0.22) {
+                this.settledInPocket = pocket;
+                this.inPlay = false;
+                this.vx = 0;
+                this.vy = 0;
+                sounds.playPocket(pocket.type);
+                game.handleOutcome(pocket.type, pocket.name);
+                break;
+              }
+            }
+          }
+        }
+
+        // If ball completely stopped on the field (dead ball / infield play)
+        if (this.inPlay && speed < 1.5 && !this.isPitched) {
+          this.settleTimer += dt;
+          if (this.settleTimer > 0.8) {
+            this.inPlay = false;
+            // Check if foul or infield grounder
+            if (this.x > HOME_PLATE.x - 60 && this.y < HOME_PLATE.y + 60) {
+              sounds.playPocket('out');
+              game.handleOutcome('foul', 'Foul Ball');
+            } else {
+              sounds.playPocket('out');
+              game.handleOutcome('out', 'Infield Grounder - Out!');
+            }
+          }
+        }
+      }
+
+      draw(ctx) {
+        // Draw ball trail
+        ctx.save();
+        for (let i = 0; i < this.trail.length; i++) {
+          const pt = this.trail[i];
+          const trAlpha = (i / this.trail.length) * 0.45;
+          const trRadius = this.radius * (0.4 + (i / this.trail.length) * 0.6);
+          ctx.fillStyle = `rgba(255, 255, 255, ${trAlpha})`;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, trRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Ball Shadow
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(this.x + 3, this.y + 5, this.radius, this.radius * 0.75, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Baseball body (cream leather baseball with red stitches)
+        const ballGrad = ctx.createRadialGradient(
+          this.x - this.radius * 0.35, this.y - this.radius * 0.35, this.radius * 0.1,
+          this.x, this.y, this.radius
+        );
+        ballGrad.addColorStop(0, '#ffffff');
+        ballGrad.addColorStop(0.7, '#f4ece1');
+        ballGrad.addColorStop(1, '#c9bbaa');
+        ctx.fillStyle = ballGrad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Red baseball seams
+        ctx.strokeStyle = '#c1121f';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(this.x - 3, this.y, this.radius * 0.7, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(this.x + 3, this.y, this.radius * 0.7, Math.PI * 0.65, Math.PI * 1.35);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    /* =========================================================================
+       BASEBALL MATCH RULES, SCORING & STATE
+       ========================================================================= */
+
+    class BaseballGame {
+      constructor() {
+        this.bat = new RubberbandBat();
+        this.ball = new Ball();
+
+        // 3-Inning quick game or 9-inning arcade
+        this.totalInnings = 3;
+        this.currentInning = 1;
+        this.isTopInning = false; // Player is HOME team, bats in bottom of inning
+
+        this.outs = 0;
+        this.strikes = 0;
+        this.ballsCount = 0;
+
+        // Base runners: [1st, 2nd, 3rd]
+        this.runners = [false, false, false];
+
+        this.homeRuns = 0;
+        this.visitorRuns = 0;
+        this.homeHits = 0;
+        this.visitorHits = 0;
+        this.homeErrors = 0;
+        this.visitorErrors = 0;
+
+        this.inningScores = {
+          visitor: [0, 0, 0],
+          home: [0, 0, 0]
+        };
+
+        this.particles = [];
+        this.exitVeloMPH = 0;
+        this.distanceFT = 0;
+
+        this.gameOver = false;
+        this.readyForNextPitch = true;
+      }
+
+      init() {
+        this.updateUI();
+        this.ball.resetAtTee();
+      }
+
+      onBatHit(speed) {
+        // Convert physics velocity to authentic exit velocity (MPH) & distance (FT)
+        this.exitVeloMPH = Math.round(speed * 0.16 + 25);
+        this.distanceFT = Math.round(this.exitVeloMPH * 3.8 + Math.random() * 20);
+
+        document.getElementById('statVelo').textContent = `${this.exitVeloMPH} MPH`;
+        document.getElementById('liveRadar').textContent = `${this.exitVeloMPH} MPH`;
+        document.getElementById('statDist').textContent = `${this.distanceFT} FT`;
+      }
+
+      handleOutcome(outcomeType, label) {
+        let announcement = '';
+        let runsScoredThisPlay = 0;
+
+        document.getElementById('statPlay').textContent = label;
+
+        if (outcomeType === 'hr') {
+          // Home Run: clear all bases + batter
+          runsScoredThisPlay = 1 + this.runners.filter(Boolean).length;
+          this.runners = [false, false, false];
+          this.homeHits++;
+          this.addRuns(runsScoredThisPlay);
+          this.strikes = 0;
+
+          announcement = (runsScoredThisPlay === 4) 
+            ? "GRAND SLAM HOME RUN!! BASES CLEARED!!" 
+            : `IT'S A HOME RUN! ${runsScoredThisPlay} RUN${runsScoredThisPlay > 1 ? 'S' : ''} SCORED!`;
+          
+          this.showBanner("HOME RUN!", announcement);
+          this.createConfetti(100);
+
+        } else if (outcomeType === 'triple') {
+          // 3rd Base Hit
+          runsScoredThisPlay = this.runners.filter(Boolean).length;
+          this.runners = [false, false, true];
+          this.homeHits++;
+          this.addRuns(runsScoredThisPlay);
+          this.strikes = 0;
+          announcement = `STAND-UP TRIPLE! ${runsScoredThisPlay > 0 ? runsScoredThisPlay + ' Run(s) in!' : 'Runner on 3rd!'}`;
+          this.showBanner("TRIPLE!", "Smoked off the yellow divider!");
+
+        } else if (outcomeType === 'double') {
+          // 2nd Base Hit: advance runners 2 bases
+          if (this.runners[2]) runsScoredThisPlay++;
+          if (this.runners[1]) runsScoredThisPlay++;
+          this.runners[2] = this.runners[0];
+          this.runners[1] = true;
+          this.runners[0] = false;
+          this.homeHits++;
+          this.addRuns(runsScoredThisPlay);
+          this.strikes = 0;
+          announcement = `DOUBLE INTO THE GAP! ${runsScoredThisPlay > 0 ? runsScoredThisPlay + ' Run(s) scored!' : 'Runner on 2nd!'}`;
+          this.showBanner("DOUBLE!", "Solid shot into the purple pocket!");
+
+        } else if (outcomeType === 'single') {
+          // 1st Base Hit: advance runners 1 base
+          if (this.runners[2]) runsScoredThisPlay++;
+          this.runners[2] = this.runners[1];
+          this.runners[1] = this.runners[0];
+          this.runners[0] = true;
+          this.homeHits++;
+          this.addRuns(runsScoredThisPlay);
+          this.strikes = 0;
+          announcement = `BASE HIT SINGLE! ${runsScoredThisPlay > 0 ? 'Run scored from 3rd!' : 'Runner on 1st.'}`;
+          this.showBanner("SINGLE!", "Sharp liner into orange pocket!");
+
+        } else if (outcomeType === 'foul') {
+          // Foul ball
+          if (this.strikes < 2) {
+            this.strikes++;
+            announcement = `Foul ball. Strike ${this.strikes}!`;
+          } else {
+            announcement = "Foul ball, count stays at 2 strikes.";
+          }
+
+        } else {
+          // Out or Pitcher's hole
+          this.outs++;
+          this.strikes = 0;
+          announcement = (outcomeType === 'pitcher_out')
+            ? "Caught by the pitcher in the mound slot! OUT!"
+            : "Ball settled in the Out pocket! That's an OUT!";
+          this.showBanner("OUT!", announcement);
+
+          if (this.outs >= 3) {
+            this.advanceInning();
+            return;
+          }
+        }
+
+        document.getElementById('announcerText').textContent = announcement;
+        this.updateUI();
+
+        // Prepare ball for next play after brief pause
+        setTimeout(() => {
+          if (!this.gameOver) {
+            const mode = document.getElementById('pitchModeSelect').value;
+            if (mode === 'tee') {
+              this.ball.resetAtTee();
+            } else {
+              this.ball.x = -100;
+              this.ball.y = -100;
+              this.ball.inPlay = false;
+              document.getElementById('announcerText').textContent = 
+                "Press [PITCH BALL] or Spacebar for next pitch!";
+            }
+          }
+        }, 1600);
+      }
+
+      addRuns(qty) {
+        if (qty <= 0) return;
+        this.homeRuns += qty;
+        const innIdx = this.currentInning - 1;
+        this.inningScores.home[innIdx] = (this.inningScores.home[innIdx] || 0) + qty;
+      }
+
+      advanceInning() {
+        this.outs = 0;
+        this.strikes = 0;
+        this.runners = [false, false, false];
+
+        // Simulate CPU Away team's half inning
+        const cpuRunsThisInning = Math.floor(Math.random() * 2.2);
+        this.visitorRuns += cpuRunsThisInning;
+        this.visitorHits += cpuRunsThisInning + (Math.random() > 0.5 ? 1 : 0);
+        const innIdx = this.currentInning - 1;
+        this.inningScores.visitor[innIdx] = cpuRunsThisInning;
+
+        if (this.currentInning >= this.totalInnings) {
+          this.gameOver = true;
+          const won = this.homeRuns > this.visitorRuns;
+          const tied = this.homeRuns === this.visitorRuns;
+          const msg = won 
+            ? `VICTORY! HOME WINS ${this.homeRuns} - ${this.visitorRuns}!`
+            : (tied ? `DRAW GAME! Final: ${this.homeRuns} - ${this.visitorRuns}` : `FINAL: VISITORS WIN ${this.visitorRuns} - ${this.homeRuns}!`);
+          this.showBanner(won ? "WINNER!" : "GAME OVER", msg);
+          document.getElementById('announcerText').textContent = msg;
+        } else {
+          this.currentInning++;
+          document.getElementById('announcerText').textContent = 
+            `End of Inning. Visitors score ${cpuRunsThisInning}. Now batting Bottom of ${this.currentInning}!`;
+        }
+
+        this.updateUI();
+      }
+
+      showBanner(title, desc) {
+        const banner = document.getElementById('playBanner');
+        document.getElementById('bannerTitle').textContent = title;
+        document.getElementById('bannerDesc').textContent = desc;
+        banner.classList.add('show');
+        setTimeout(() => banner.classList.remove('show'), 1500);
+      }
+
+      createConfetti(count = 60) {
+        for (let i = 0; i < count; i++) {
+          this.particles.push({
+            x: INNER_LEFT + Math.random() * INNER_SIZE,
+            y: INNER_TOP + Math.random() * INNER_SIZE,
+            vx: (Math.random() - 0.5) * 350,
+            vy: (Math.random() - 0.5) * 350,
+            size: Math.random() * 8 + 4,
+            color: ['#f8c233', '#e65c78', '#7ba6c4', '#deb336', '#9661a8', '#ffffff'][Math.floor(Math.random() * 6)],
+            life: 1.0,
+            rot: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 10
+          });
+        }
+      }
+
+      updateParticles(dt) {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const p = this.particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.rot += p.vRot * dt;
+          p.life -= dt * 0.7;
+          if (p.life <= 0) {
+            this.particles.splice(i, 1);
+          }
+        }
+      }
+
+      drawParticles(ctx) {
+        ctx.save();
+        for (const p of this.particles) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.life);
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      updateUI() {
+        // Runs, Hits, Errors
+        document.getElementById('homeRuns').textContent = this.homeRuns;
+        document.getElementById('visitorRuns').textContent = this.visitorRuns;
+        document.getElementById('homeHits').textContent = this.homeHits;
+        document.getElementById('visitorHits').textContent = this.visitorHits;
+        document.getElementById('homeErrors').textContent = this.homeErrors;
+        document.getElementById('visitorErrors').textContent = this.visitorErrors;
+
+        // Inning scores
+        document.getElementById('h1').textContent = this.inningScores.home[0] ?? '-';
+        document.getElementById('h2').textContent = this.currentInning >= 2 ? (this.inningScores.home[1] ?? 0) : '-';
+        document.getElementById('h3').textContent = this.currentInning >= 3 ? (this.inningScores.home[2] ?? 0) : '-';
+
+        document.getElementById('v1').textContent = this.inningScores.visitor[0] ?? '-';
+        document.getElementById('v2').textContent = this.currentInning >= 2 ? (this.inningScores.visitor[1] ?? 0) : '-';
+        document.getElementById('v3').textContent = this.currentInning >= 3 ? (this.inningScores.visitor[2] ?? 0) : '-';
+
+        // Outs
+        document.getElementById('out1').classList.toggle('out-lit', this.outs >= 1);
+        document.getElementById('out2').classList.toggle('out-lit', this.outs >= 2);
+        document.getElementById('out3').classList.toggle('out-lit', this.outs >= 3);
+
+        // Strikes
+        document.getElementById('strike1').classList.toggle('strike-lit', this.strikes >= 1);
+        document.getElementById('strike2').classList.toggle('strike-lit', this.strikes >= 2);
+
+        // Runners on base nodes
+        document.getElementById('node1st').classList.toggle('active-runner', this.runners[0]);
+        document.getElementById('node2nd').classList.toggle('active-runner', this.runners[1]);
+        document.getElementById('node3rd').classList.toggle('active-runner', this.runners[2]);
+
+        // Inning label
+        document.getElementById('inningDisplay').textContent = `BOTTOM ${this.currentInning}${['st','nd','rd'][this.currentInning-1] || 'th'}`;
+      }
+
+      reset() {
+        this.currentInning = 1;
+        this.outs = 0;
+        this.strikes = 0;
+        this.homeRuns = 0;
+        this.visitorRuns = 0;
+        this.homeHits = 0;
+        this.visitorHits = 0;
+        this.runners = [false, false, false];
+        this.inningScores = { visitor: [0, 0, 0], home: [0, 0, 0] };
+        this.gameOver = false;
+        this.ball.resetAtTee();
+        this.updateUI();
+        document.getElementById('announcerText').textContent = "New Game! Batter up! Pull back the bat to swing.";
+      }
+    }
+
+    const game = new BaseballGame();
+
+    /* =========================================================================
+       CANVAS RENDERING: AUTHENTIC DIY CARDBOARD ARENA
+       Render corrugated cardboard grain, colored paper pockets, white tape bases,
+       duct tape accents, Sharpie hand-lettering, and realistic shadows!
+       ========================================================================= */
+
+    function drawCardboardTexture(ctx) {
+      // Outer box rim (corrugated cardboard side edges)
+      ctx.fillStyle = '#8b5e34';
+      ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+      // Fluting lines on outer rim
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+      ctx.lineWidth = 2;
+      for (let y = 0; y < BOARD_SIZE; y += 8) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(PADDING, y);
+        ctx.moveTo(INNER_RIGHT, y);
+        ctx.lineTo(BOARD_SIZE, y);
+        ctx.stroke();
+      }
+      for (let x = 0; x < BOARD_SIZE; x += 8) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, PADDING);
+        ctx.moveTo(x, INNER_BOTTOM);
+        ctx.lineTo(x, BOARD_SIZE);
+        ctx.stroke();
+      }
+
+      // Inner field floor (Brown Kraft Cardboard base)
+      ctx.fillStyle = '#c59b67';
+      ctx.fillRect(INNER_LEFT, INNER_TOP, INNER_SIZE, INNER_SIZE);
+
+      // Subtle horizontal corrugated paper lines
+      ctx.strokeStyle = 'rgba(70, 40, 15, 0.05)';
+      ctx.lineWidth = 3;
+      for (let y = INNER_TOP; y < INNER_BOTTOM; y += 6) {
+        ctx.beginPath();
+        ctx.moveTo(INNER_LEFT, y);
+        ctx.lineTo(INNER_RIGHT, y);
+        ctx.stroke();
+      }
+
+      // Green Construction Paper Outfield (as seen in photo)
+      ctx.save();
+      ctx.fillStyle = '#699e69';
+      // Fill outfield area excluding the brown infield diamond
+      ctx.beginPath();
+      ctx.moveTo(INNER_LEFT, INNER_TOP);
+      ctx.lineTo(INNER_LEFT + 260, INNER_TOP);
+      ctx.lineTo(INNER_LEFT + 260, INNER_BOTTOM - 260);
+      ctx.lineTo(INNER_RIGHT, INNER_BOTTOM - 260);
+      ctx.lineTo(INNER_RIGHT, INNER_BOTTOM);
+      ctx.lineTo(INNER_LEFT, INNER_BOTTOM);
+      ctx.closePath();
+      ctx.fill();
+
+      // Paper grain noise texture on green outfield
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.03)';
+      ctx.lineWidth = 1;
+      for (let y = INNER_TOP; y < INNER_BOTTOM; y += 4) {
+        ctx.beginPath();
+        ctx.moveTo(INNER_LEFT, y);
+        ctx.lineTo(INNER_RIGHT, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Brown Cardboard Infield Diamond
+      ctx.save();
+      ctx.fillStyle = '#be925f';
+      ctx.beginPath();
+      ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y);
+      ctx.lineTo(BASE_1ST.x, BASE_1ST.y);
+      ctx.lineTo(BASE_2ND.x, BASE_2ND.y);
+      ctx.lineTo(BASE_3RD.x, BASE_3RD.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Black Marker Infield Foul Lines (drawn with marker in the real game)
+      ctx.strokeStyle = '#2b1d12';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      // 1st base line along right edge
+      ctx.moveTo(HOME_PLATE.x + 10, HOME_PLATE.y);
+      ctx.lineTo(BASE_1ST.x + 10, BASE_1ST.y + 40);
+      // 3rd base line along top edge
+      ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y - 10);
+      ctx.lineTo(BASE_3RD.x - 40, BASE_3RD.y - 10);
+      ctx.stroke();
+      ctx.restore();
+
+      // White Masking Tape Bases (Home, 1st, 2nd, 3rd)
+      const drawTapeBase = (x, y, w = 34, h = 34, rot = 0) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        // Tape drop shadow
+        ctx.fillStyle = 'rgba(40, 20, 5, 0.2)';
+        ctx.fillRect(-w/2 + 2, -h/2 + 2, w, h);
+        // Semi-translucent textured white masking tape
+        ctx.fillStyle = 'rgba(246, 243, 232, 0.93)';
+        ctx.fillRect(-w/2, -h/2, w, h);
+        // Crinkled tape edge fibers
+        ctx.strokeStyle = 'rgba(180, 165, 140, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-w/2, -h/2, w, h);
+        ctx.restore();
+      };
+
+      drawTapeBase(HOME_PLATE.x, HOME_PLATE.y, 42, 42, Math.PI / 4);
+      drawTapeBase(BASE_1ST.x, BASE_1ST.y, 36, 36);
+      drawTapeBase(BASE_2ND.x, BASE_2ND.y, 36, 36);
+      drawTapeBase(BASE_3RD.x, BASE_3RD.y, 36, 36);
+
+      // Pitcher's Mound Hole Cutout (Angled rectangle with deep cardboard shadow)
+      ctx.save();
+      ctx.translate(PITCHER_HOLE.x, PITCHER_HOLE.y);
+      ctx.rotate(PITCHER_HOLE.angle);
+
+      // Cutout hole deep shadow interior
+      ctx.fillStyle = '#1c130b';
+      ctx.fillRect(-PITCHER_HOLE.width/2, -PITCHER_HOLE.height/2, PITCHER_HOLE.width, PITCHER_HOLE.height);
+
+      // Cardboard cross-section depth lines inside hole
+      ctx.strokeStyle = '#3d2817';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(-PITCHER_HOLE.width/2, -PITCHER_HOLE.height/2, PITCHER_HOLE.width, PITCHER_HOLE.height);
+
+      // Wooden marble / ball ramp guide inside hole
+      ctx.fillStyle = '#4a3320';
+      ctx.fillRect(-PITCHER_HOLE.width/2 + 6, -PITCHER_HOLE.height/2 + 10, PITCHER_HOLE.width - 12, PITCHER_HOLE.height - 20);
+
+      ctx.restore();
+    }
+
+    function drawPockets(ctx) {
+      for (const pocket of pockets) {
+        const b = pocket.bounds;
+        const w = b.x2 - b.x1;
+        const h = b.y2 - b.y1;
+
+        // Colored Construction Paper Base
+        ctx.save();
+        ctx.fillStyle = pocket.color;
+        ctx.fillRect(b.x1, b.y1, w, h);
+
+        // Soft pocket inner shadow
+        const grad = ctx.createLinearGradient(b.x1, b.y1, b.x2, b.y2);
+        grad.addColorStop(0, 'rgba(0, 0, 0, 0.15)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0.05)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(b.x1, b.y1, w, h);
+
+        // Hand-lettered Sharpie text on pocket
+        ctx.save();
+        ctx.translate(pocket.labelPos.x, pocket.labelPos.y);
+        ctx.rotate(pocket.labelPos.rot);
+        ctx.font = '700 24px "Caveat", "Permanent Marker", cursive';
+        ctx.fillStyle = pocket.textColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+        ctx.shadowBlur = 2;
+        ctx.fillText(pocket.label, 0, 0);
+        ctx.restore();
+
+        ctx.restore();
+      }
+    }
+
+    function drawDividers(ctx) {
+      ctx.save();
+      for (const div of dividers) {
+        // Cast shadow of cardboard divider
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.lineWidth = div.thickness + 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(div.x1 + 4, div.y1 + 5);
+        ctx.lineTo(div.x2 + 4, div.y2 + 5);
+        ctx.stroke();
+
+        // Cardboard thickness core
+        ctx.strokeStyle = '#85592e';
+        ctx.lineWidth = div.thickness;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(div.x1, div.y1);
+        ctx.lineTo(div.x2, div.y2);
+        ctx.stroke();
+
+        // Top edge light highlight
+        ctx.strokeStyle = '#c99b66';
+        ctx.lineWidth = Math.max(2, div.thickness * 0.35);
+        ctx.beginPath();
+        ctx.moveTo(div.x1, div.y1);
+        ctx.lineTo(div.x2, div.y2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* =========================================================================
+       INPUT HANDLING: MOUSE, TOUCH, KEYBOARD
+       Drag bat backwards to stretch the purple rubberband, release to flick!
+       ========================================================================= */
+
+    function getCanvasCoordinates(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      let clientX, clientY;
+      if (evt.touches && evt.touches.length > 0) {
+        clientX = evt.touches[0].clientX;
+        clientY = evt.touches[0].clientY;
+      } else {
+        clientX = evt.clientX;
+        clientY = evt.clientY;
+      }
+
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function onPointerDown(evt) {
+      sounds.init();
+      const pos = getCanvasCoordinates(evt);
+
+      // Check if clicking near the bat or home plate
+      const batTip = game.bat.getTip();
+      const dPivot = Math.hypot(pos.x - game.bat.pivot.x, pos.y - game.bat.pivot.y);
+      const dTip = Math.hypot(pos.x - batTip.x, pos.y - batTip.y);
+
+      // If clicked near the bat
+      if (dTip < 80 || dPivot < 140) {
+        game.bat.isDragging = true;
+        canvas.classList.add('dragging');
+        onPointerMove(evt);
+        evt.preventDefault();
+      }
+    }
+
+    function onPointerMove(evt) {
+      if (!game.bat.isDragging) return;
+      const pos = getCanvasCoordinates(evt);
+
+      // Calculate angle from pivot to mouse
+      const dx = pos.x - game.bat.pivot.x;
+      const dy = pos.y - game.bat.pivot.y;
+      let angle = Math.atan2(dy, dx);
+
+      // Clamp angle within pull-back range
+      angle = Math.max(game.bat.minAngle, Math.min(game.bat.restAngle + 0.1, angle));
+      game.bat.targetAngle = angle;
+
+      // Play audio stretch creak proportional to pull
+      const strainRatio = (game.bat.restAngle - angle) / (game.bat.restAngle - game.bat.minAngle);
+      if (Math.random() < 0.25) {
+        sounds.playStretch(strainRatio);
+      }
+      evt.preventDefault();
+    }
+
+    function onPointerUp(evt) {
+      if (game.bat.isDragging) {
+        game.bat.isDragging = false;
+        canvas.classList.remove('dragging');
+        sounds.playSnap();
+      }
+    }
+
+    // Attach canvas pointer listeners
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+      sounds.init();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        triggerPitch();
+      } else if (e.code === 'KeyN') {
+        nudgeBox();
+      } else if (e.code === 'KeyR') {
+        game.ball.resetAtTee();
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        // Pull back bat via key
+        game.bat.isDragging = true;
+        game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.targetAngle - 0.2);
+        sounds.playStretch(0.6);
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        if (game.bat.isDragging) {
+          game.bat.isDragging = false;
+          sounds.playSnap();
+        }
+      }
+    });
+
+    /* =========================================================================
+       UI CONTROLS & EVENT WIRING
+       ========================================================================= */
+
+    function triggerPitch() {
+      sounds.init();
+      const mode = document.getElementById('pitchModeSelect').value;
+      if (mode === 'tee') {
+        game.ball.resetAtTee();
+        document.getElementById('announcerText').textContent = 
+          "Ball placed on Batting Tee! Pull back the bat and flick!";
+      } else {
+        game.ball.pitchFromMound(mode);
+        document.getElementById('announcerText').textContent = 
+          `Pitch is on the way! (${mode.toUpperCase()}) Time your swing!`;
+      }
+    }
+
+    function nudgeBox() {
+      sounds.init();
+      sounds.playWallBounce(2.5);
+      // Nudge ball velocity
+      if (game.ball.inPlay) {
+        game.ball.vx += (Math.random() - 0.5) * 120;
+        game.ball.vy += (Math.random() - 0.5) * 120;
+      }
+      // Visual wobble on canvas container
+      const container = document.getElementById('canvasContainer');
+      container.style.transform = `translate(${(Math.random()-0.5)*12}px, ${(Math.random()-0.5)*12}px) rotate(${(Math.random()-0.5)*1.5}deg)`;
+      setTimeout(() => container.style.transform = 'none', 140);
+    }
+
+    document.getElementById('pitchBtn').addEventListener('click', triggerPitch);
+    document.getElementById('nudgeBtn').addEventListener('click', nudgeBox);
+
+    document.getElementById('pitchModeSelect').addEventListener('change', (e) => {
+      if (e.target.value === 'tee') {
+        game.ball.resetAtTee();
+      }
+    });
+
+    // Sound toggle
+    const soundBtn = document.getElementById('soundToggleBtn');
+    soundBtn.addEventListener('click', () => {
+      sounds.init();
+      sounds.enabled = !sounds.enabled;
+      document.getElementById('soundIcon').textContent = sounds.enabled ? '🔊' : '🔇';
+      document.getElementById('soundLabel').textContent = sounds.enabled ? 'Sound ON' : 'Sound OFF';
+    });
+
+    // Reset button
+    document.getElementById('resetGameBtn').addEventListener('click', () => {
+      game.reset();
+    });
+
+    // Help modal
+    const helpModal = document.getElementById('helpModal');
+    document.getElementById('helpBtn').addEventListener('click', () => {
+      helpModal.classList.add('open');
+    });
+    document.getElementById('closeHelpBtn').addEventListener('click', () => {
+      sounds.init();
+      helpModal.classList.remove('open');
+    });
+
+    /* =========================================================================
+       MAIN PHYSICS & RENDER LOOP
+       ========================================================================= */
+
+    let lastTime = performance.now();
+
+    function gameLoop(now) {
+      const dt = Math.min(0.04, (now - lastTime) / 1000);
+      lastTime = now;
+
+      // High-precision physics substepping (8 substeps per frame for ultra-crisp collisions)
+      const SUBSTEPS = 8;
+      const subDt = dt / SUBSTEPS;
+      for (let s = 0; s < SUBSTEPS; s++) {
+        game.bat.updatePhysics(subDt);
+        game.ball.subUpdate(subDt, game.bat);
+      }
+      game.ball.postUpdate(dt);
+      game.updateParticles(dt);
+
+      // Render Scene
+      ctx.clearRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+      // 1. Base cardboard textures & infield diamond
+      drawCardboardTexture(ctx);
+
+      // 2. Colored construction paper outfield pockets
+      drawPockets(ctx);
+
+      // 3. Cardboard pocket dividers
+      drawDividers(ctx);
+
+      // 4. Ball (baseball with seams & trail)
+      game.ball.draw(ctx);
+
+      // 5. Rubberband Bat mechanism
+      game.bat.draw(ctx);
+
+      // 6. Celebration confetti particles
+      game.drawParticles(ctx);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize and start loop
+    game.init();
+    requestAnimationFrame(gameLoop);
+
+  </script>
+</body>
+</html>
