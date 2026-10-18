@@ -1400,9 +1400,6 @@
     addDivider(530, INNER_BOTTOM - POCKET_DEPTH, 530, INNER_BOTTOM);
     addDivider(630, INNER_BOTTOM - POCKET_DEPTH, 630, INNER_BOTTOM);
 
-    // Corner divider post between left wall and bottom wall
-    addDivider(INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - POCKET_DEPTH + 1);
-
     // Outer Cardboard Perimeter Walls
     const outerWalls = [
       { x1: INNER_LEFT, y1: INNER_TOP, x2: INNER_RIGHT, y2: INNER_TOP, normal: {x: 0, y: 1} },      // Top wall
@@ -1819,6 +1816,8 @@
         this.waitingForPitch = true;
         this.settledInPocket = null;
         this.settleTimer = 0;
+        this.playTimer = 0;
+        this.pitchTimer = 0;
         this.trail = [];
         this.isPitched = false;
         this.inPitcherHole = false;
@@ -1837,6 +1836,8 @@
         this.waitingForPitch = false;
         this.settledInPocket = null;
         this.settleTimer = 0;
+        this.playTimer = 0;
+        this.pitchTimer = 0;
         this.trail = [];
         this.isPitched = false;
         this.inPitcherHole = false;
@@ -1855,6 +1856,8 @@
         this.waitingForPitch = true;
         this.settledInPocket = null;
         this.settleTimer = 0;
+        this.playTimer = 0;
+        this.pitchTimer = 0;
         this.trail = [];
         this.isPitched = false;
         this.inPitcherHole = false;
@@ -1875,6 +1878,8 @@
         this.inPitcherHole = false;
         this.settledInPocket = null;
         this.settleTimer = 0;
+        this.playTimer = 0;
+        this.pitchTimer = 0;
         this.inPlay = true;
         this.isPitched = true;
         this.waitingForPitch = false;
@@ -1926,36 +1931,36 @@
         const dy = targetY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // Highly variable pitch speeds (110 px/s to 530 px/s = ~5x variance!)
-        let speed = 320;
-        let pitchPitchDesc = "Pitch in incoming...";
+        // Highly variable pitch speeds (180 px/s to 530 px/s, ensuring all cleanly reach plate!)
+        let speed = 340;
+        let pitchPitchDesc = "Pitch is incoming...";
         if (mode === 'fastball') {
-          // 101 MPH Blazing heat: 460 - 530 px/s (reaches plate in ~0.53s!)
-          speed = 460 + Math.random() * 70;
+          // 101 MPH Blazing heat: 470 - 530 px/s (reaches plate in ~0.55s!)
+          speed = 470 + Math.random() * 60;
           this.spin = (Math.random() - 0.5) * 45;
           pitchPitchDesc = `🔥 Fastball (${Math.round(speed * 0.20)} MPH)`;
         } else if (mode === 'curve') {
-          // Bending 12-6 or sweeping curve: 250 - 320 px/s with heavy spin
-          speed = 250 + Math.random() * 70;
+          // Bending 12-6 or sweeping curve: 300 - 360 px/s with heavy spin
+          speed = 300 + Math.random() * 60;
           this.spin = (Math.random() > 0.5 ? 1 : -1) * (260 + Math.random() * 80);
           pitchPitchDesc = `🌀 Bending Curveball (${Math.round(speed * 0.20)} MPH)`;
         } else if (mode === 'slider') {
-          // Sharp darting cutter/slider: 360 - 430 px/s
-          speed = 360 + Math.random() * 70;
+          // Sharp darting cutter/slider: 380 - 440 px/s
+          speed = 380 + Math.random() * 60;
           this.spin = (Math.random() > 0.5 ? 1 : -1) * 160;
           pitchPitchDesc = `⚡ Darting Slider (${Math.round(speed * 0.20)} MPH)`;
         } else if (mode === 'changeup') {
-          // Off-speed floating changeup: 160 - 210 px/s (takes ~1.5s!)
-          speed = 160 + Math.random() * 50;
-          this.spin = (Math.random() - 0.5) * 60;
+          // Off-speed floating changeup: 220 - 260 px/s (takes ~1.1s, nicely slow but never stops!)
+          speed = 220 + Math.random() * 40;
+          this.spin = (Math.random() - 0.5) * 50;
           pitchPitchDesc = `🍃 Slow Changeup (${Math.round(speed * 0.20)} MPH)`;
         } else if (mode === 'knuckle') {
-          // 50 MPH Knuckle-Eephus floater: 110 - 150 px/s (wobbles in super slowly!)
-          speed = 110 + Math.random() * 40;
+          // 55 MPH Knuckle-Eephus floater: 180 - 210 px/s (takes ~1.4s, slow wobble!)
+          speed = 180 + Math.random() * 30;
           this.spin = (Math.random() - 0.5) * 30;
           pitchPitchDesc = `💫 Slow Eephus Blooper (${Math.round(speed * 0.20)} MPH)`;
         } else {
-          speed = 310;
+          speed = 320;
           this.spin = 0;
           pitchPitchDesc = `Stationary Tee`;
         }
@@ -1986,39 +1991,45 @@
           return;
         }
 
+        this.playTimer += subDt;
+
         // Apply curve spin acceleration in flight
         if (this.spin && Math.abs(this.spin) > 8) {
           const speed = Math.hypot(this.vx, this.vy);
           if (speed > 40) {
-            this.vx += (-this.vy / speed) * this.spin * subDt;
-            this.vy += (this.vx / speed) * this.spin * subDt;
+            const oldVx = this.vx;
+            const oldVy = this.vy;
+            this.vx += (-oldVy / speed) * this.spin * subDt;
+            this.vy += (oldVx / speed) * this.spin * subDt;
             this.spin *= Math.pow(0.96, subDt * 60);
           }
         }
 
-        // Corrugated cardboard micro-fluting deflection
-        if (this.inPlay && !this.settledInPocket) {
-          this.vy += Math.sin(this.y * 0.35) * 6.0 * subDt;
-          this.vx += Math.cos(this.x * 0.35) * 6.0 * subDt;
+        // Friction & cardboard micro-fluting only apply when ball is in play after hit (NOT during pitch delivery!)
+        if (!this.isPitched) {
+          if (!this.settledInPocket) {
+            this.vy += Math.sin(this.y * 0.35) * 5.0 * subDt;
+            this.vx += Math.cos(this.x * 0.35) * 5.0 * subDt;
+          }
+          const subFriction = Math.pow(this.friction, subDt * 60);
+          this.vx *= subFriction;
+          this.vy *= subFriction;
         }
-
-        // Rolling friction damping
-        const subFriction = Math.pow(this.friction, subDt * 60);
-        this.vx *= subFriction;
-        this.vy *= subFriction;
 
         // Position integration
         this.x += this.vx * subDt;
         this.y += this.vy * subDt;
 
-        // Check if unhit pitch crossed Home Plate (Called Strike or Ball)
+        // Check if unhit pitch crossed Home Plate (Called Strike or Ball with pitchTimer failsafe!)
         if (this.isPitched && !this.inPitcherHole) {
+          this.pitchTimer += subDt;
           const dx = this.x - PITCHER_MOUND.x;
           const dy = this.y - PITCHER_MOUND.y;
           // Progress along line from mound towards home plate
           const progress = (dx - dy) * 0.70710678;
-          if (progress > 295) {
-            // Perpendicular offset from home plate center
+
+          // Crosses home plate or reaches pitch timeout failsafe
+          if (progress >= 272 || this.pitchTimer > 2.4) {
             const perpOffset = Math.abs((dx + dy) * 0.70710678);
             const swung = bat.isDragging || Math.abs(bat.angularVel) > 2.2 || bat.isStuck;
 
@@ -2049,6 +2060,16 @@
           this.checkDividersCollision();
           this.checkWallCollisions();
           this.checkPitcherHole();
+        }
+
+        // Safety Watchdog: Never let a hit ball get stuck indefinitely!
+        if (this.inPlay && !this.isPitched && this.playTimer > 5.2) {
+          this.inPlay = false;
+          this.vx = 0;
+          this.vy = 0;
+          const isFoul = (this.x > HOME_PLATE.x || this.y < HOME_PLATE.y);
+          sounds.playPocket('out');
+          game.handleOutcome(isFoul ? 'foul' : 'out', isFoul ? 'Foul Ball' : 'Outfield Flyout - Out!');
         }
       }
 
@@ -2286,46 +2307,43 @@
       checkPocketCapture(dt) {
         if (!this.inPlay || this.settledInPocket) return;
 
-        const speed = Math.hypot(this.vx, this.vy);
-
-        // Check if inside any pocket bounds -> STICK WHERE IT LANDS!
+        // Instant Pocket Capture: If ball enters any pocket bounds, capture and stick immediately!
         for (const pocket of pockets) {
           const b = pocket.bounds;
           if (this.x >= b.x1 && this.x <= b.x2 && this.y >= b.y1 && this.y <= b.y2) {
-            // Rapidly damp momentum upon landing in cardboard pocket tray
-            this.vx *= 0.45;
-            this.vy *= 0.45;
-            this.visualScale = Math.max(0.88, this.visualScale - 0.04);
-            this.settleTimer += dt;
-
-            // Stick where it lands!
-            if (this.settleTimer > 0.06 || speed < 120) {
-              this.settledInPocket = pocket;
-              this.inPlay = false;
-              this.vx = 0;
-              this.vy = 0;
-              sounds.playPocket(pocket.type);
-              game.handleOutcome(pocket.type, pocket.name);
-              return;
-            }
-          }
-        }
-
-        // If ball completely stopped on the diamond (dead ball / infield play)
-        if (this.inPlay && speed < 32 && !this.isPitched) {
-          this.settleTimer += dt;
-          if (this.settleTimer > 0.25) {
+            this.settledInPocket = pocket;
             this.inPlay = false;
             this.vx = 0;
             this.vy = 0;
-            // Check if foul or infield grounder
-            if (this.x > HOME_PLATE.x - 70 && this.y < HOME_PLATE.y + 70) {
-              sounds.playPocket('out');
-              game.handleOutcome('foul', 'Foul Ball');
-            } else {
-              sounds.playPocket('out');
-              game.handleOutcome('out', 'Infield Grounder - Out!');
+            sounds.playPocket(pocket.type);
+            game.handleOutcome(pocket.type, pocket.name);
+            return;
+          }
+        }
+
+        const speed = Math.hypot(this.vx, this.vy);
+
+        // Dead ball / Infield play detection: If ball slows down to a crawl on the diamond
+        if (this.inPlay && !this.isPitched) {
+          if (speed < 42) {
+            this.settleTimer += dt;
+            if (this.settleTimer > 0.35) {
+              this.inPlay = false;
+              this.vx = 0;
+              this.vy = 0;
+              // Check if foul or infield grounder
+              const isFoul = (this.x > HOME_PLATE.x || this.y < HOME_PLATE.y);
+              if (isFoul) {
+                sounds.playPocket('out');
+                game.handleOutcome('foul', 'Foul Ball');
+              } else {
+                sounds.playPocket('out');
+                game.handleOutcome('out', 'Infield Grounder - Out!');
+              }
+              return;
             }
+          } else {
+            this.settleTimer = 0;
           }
         }
       }
@@ -3443,7 +3461,15 @@
 
     function triggerPitch() {
       sounds.init();
-      if (game.ball.inPlay && !game.ball.waitingForPitch) return; // Prevent double trigger
+      // If the ball is waiting for pitch, pitch it!
+      // If the ball has been idle or in play for more than 2 seconds, allow re-pitch failsafe!
+      if (game.ball.inPlay && !game.ball.waitingForPitch) {
+        if (game.ball.playTimer > 2.0 || Math.hypot(game.ball.vx, game.ball.vy) < 28) {
+          game.ball.resetAtMound();
+        } else {
+          return; // Still actively rolling
+        }
+      }
       const mode = document.getElementById('pitchModeSelect').value;
       if (mode === 'tee') {
         game.ball.resetAtTee();
