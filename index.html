@@ -904,7 +904,7 @@
             <span>🔄</span> <span id="autoPitchLabel">Auto-Pitch: OFF</span>
           </button>
           <button class="icon-btn" id="batterHandBtn" style="background: rgba(59, 130, 246, 0.22); border-color: #3b82f6; color: #93c5fd; font-weight:700;" title="Switch batter in lineup [B]">
-            <span>🧢</span> <span id="batterHandLabel">Batter #1: Righty (RHB)</span>
+            <span>🧢</span> <span id="batterHandLabel">#7 Vincent (RHB)</span>
           </button>
           <button class="icon-btn" id="nudgeBtn" title="Nudge the box if ball gets stuck">
             <span>👋</span> Nudge
@@ -1009,11 +1009,11 @@
       <!-- Current Batter Card (Mix of RHB & LHB Sluggers) -->
       <div class="batter-card" id="currentBatterCard" title="Click to cycle next batter in lineup [B]">
         <div class="batter-card-header">
-          <span class="batter-badge rhb" id="batterBadge">#24 • RHB (Righty)</span>
-          <span class="batter-pos" id="batterPos">LF</span>
+          <span class="batter-badge rhb" id="batterBadge">#7 • RHB (Righty)</span>
+          <span class="batter-pos" id="batterPos">SS</span>
         </div>
-        <div class="batter-name" id="batterName">Rickey Henderson</div>
-        <div class="batter-desc" id="batterDesc">Leadoff Speedster • AVG: .279</div>
+        <div class="batter-name" id="batterName">Vincent</div>
+        <div class="batter-desc" id="batterDesc">The Cannon • Career Best: .328</div>
       </div>
 
       <!-- Live Announcer & Radar Gun -->
@@ -2425,15 +2425,21 @@
        ========================================================================= */
 
     const BATTING_LINEUP = [
-      { name: "Rickey Henderson", hand: "right", num: "24", pos: "LF", seasonAvg: ".279", ab: 0, h: 0, bb: 0, k: 0, desc: "Leadoff Speedster" },
-      { name: "Tony Gwynn", hand: "left", num: "19", pos: "RF", seasonAvg: ".338", ab: 0, h: 0, bb: 0, k: 0, desc: "Contact Legend" },
-      { name: "Babe Ruth", hand: "left", num: "3", pos: "DH", seasonAvg: ".342", ab: 0, h: 0, bb: 0, k: 0, desc: "The Great Bambino" },
-      { name: "Hank Aaron", hand: "right", num: "44", pos: "CF", seasonAvg: ".305", ab: 0, h: 0, bb: 0, k: 0, desc: "Home Run King" },
-      { name: "Ted Williams", hand: "left", num: "9", pos: "LF", seasonAvg: ".344", ab: 0, h: 0, bb: 0, k: 0, desc: "The Splendid Splinter" },
-      { name: "Willie Mays", hand: "right", num: "24", pos: "CF", seasonAvg: ".302", ab: 0, h: 0, bb: 0, k: 0, desc: "The Say Hey Kid" },
-      { name: "Stan Musial", hand: "left", num: "6", pos: "1B", seasonAvg: ".331", ab: 0, h: 0, bb: 0, k: 0, desc: "Stan the Man" },
-      { name: "Cal Ripken Jr.", hand: "right", num: "8", pos: "SS", seasonAvg: ".276", ab: 0, h: 0, bb: 0, k: 0, desc: "The Iron Man" },
-      { name: "Ken Griffey Jr.", hand: "left", num: "24", pos: "CF", seasonAvg: ".284", ab: 0, h: 0, bb: 0, k: 0, desc: "The Sweetest Swing" },
+      { name: "Vincent", hand: "right", num: "7", pos: "SS", seasonAvg: ".328", ab: 0, h: 0, bb: 0, k: 0, desc: "The Cannon • Line Drive Ace" },
+      { name: "Chase", hand: "left", num: "11", pos: "CF", seasonAvg: ".335", ab: 0, h: 0, bb: 0, k: 0, desc: "The Flash • Gap Speedster" },
+      { name: "Matthew", hand: "right", num: "23", pos: "3B", seasonAvg: ".318", ab: 0, h: 0, bb: 0, k: 0, desc: "Clutch King • Extra-Base Machine" },
+      { name: "Babe Ruth", hand: "left", num: "3", pos: "DH", seasonAvg: ".342", ab: 0, h: 0, bb: 0, k: 0, desc: "The Great Bambino • MLB Legend" },
+      { name: "Ben", hand: "right", num: "10", pos: "1B", seasonAvg: ".322", ab: 0, h: 0, bb: 0, k: 0, desc: "The Hammer • Power Slugger" },
+      { name: "Noah", hand: "left", num: "5", pos: "2B", seasonAvg: ".310", ab: 0, h: 0, bb: 0, k: 0, desc: "The Natural • Pure Sweet Stroke" },
+      { name: "Hank Aaron", hand: "right", num: "44", pos: "RF", seasonAvg: ".305", ab: 0, h: 0, bb: 0, k: 0, desc: "Home Run King • MLB Legend" },
+      { name: "Angel", hand: "right", num: "17", pos: "LF", seasonAvg: ".315", ab: 0, h: 0, bb: 0, k: 0, desc: "Golden Glove • Contact Master" },
+      { name: "Jacob", hand: "left", num: "14", pos: "C", seasonAvg: ".326", ab: 0, h: 0, bb: 0, k: 0, desc: "Brick Wall • All-Fields Hitter" },
+      { name: "Willie Mays", hand: "right", num: "24", pos: "CF", seasonAvg: ".302", ab: 0, h: 0, bb: 0, k: 0, desc: "The Say Hey Kid • MLB Legend" },
+      { name: "Damian", hand: "right", num: "99", pos: "DH", seasonAvg: ".330", ab: 0, h: 0, bb: 0, k: 0, desc: "Powerhouse • Monster Exit Velo" },
+      { name: "Isaiah", hand: "left", num: "2", pos: "SS", seasonAvg: ".324", ab: 0, h: 0, bb: 0, k: 0, desc: "The Magician • Spark Plug Lead-Off" },
+      { name: "Ken Griffey Jr.", hand: "left", num: "24", pos: "CF", seasonAvg: ".284", ab: 0, h: 0, bb: 0, k: 0, desc: "The Kid • MLB Legend" },
+      { name: "Ted Williams", hand: "left", num: "9", pos: "LF", seasonAvg: ".344", ab: 0, h: 0, bb: 0, k: 0, desc: "The Splendid Splinter • MLB Legend" },
+      { name: "Jackie Robinson", hand: "right", num: "42", pos: "2B", seasonAvg: ".311", ab: 0, h: 0, bb: 0, k: 0, desc: "Trailblazer • MLB Legend" }
     ];
 
     class BaseballGame {
@@ -2509,7 +2515,7 @@
         }
         if (pos) pos.textContent = b.pos;
         if (name) name.textContent = b.name;
-        if (desc) desc.textContent = `Today: ${b.h}-for-${b.ab} (${bAvg}) • Career Best: ${b.seasonAvg}`;
+        if (desc) desc.textContent = `${b.desc} • Today: ${b.h}-for-${b.ab} (${bAvg})`;
         updateBatterHandUI();
       }
 
@@ -3458,12 +3464,12 @@
           btn.style.background = 'rgba(59, 130, 246, 0.22)';
           btn.style.borderColor = '#3b82f6';
           btn.style.color = '#93c5fd';
-          label.textContent = `Batter #${b.num}: Righty (RHB)`;
+          label.textContent = `#${b.num} ${b.name} (RHB)`;
         } else {
           btn.style.background = 'rgba(236, 72, 153, 0.22)';
           btn.style.borderColor = '#ec4899';
           btn.style.color = '#f472b6';
-          label.textContent = `Batter #${b.num}: Lefty (LHB)`;
+          label.textContent = `#${b.num} ${b.name} (LHB)`;
         }
       }
     }
