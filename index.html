@@ -1510,6 +1510,8 @@
       }
 
       updatePhysics(subDt) {
+        this.prevAngle = this.angle;
+
         // Update vibration decay
         if (this.flutterTime > 0) {
           this.flutterTime -= subDt;
@@ -2022,7 +2024,10 @@
         this.x += this.vx * subDt;
         this.y += this.vy * subDt;
 
-        // Check if unhit pitch crossed Home Plate (Called Strike or Ball with pitchTimer failsafe!)
+        // 1. FIRST: Check collision with bat (bat always gets first priority to hit pitch!)
+        this.checkBatCollision(bat);
+
+        // 2. SECOND: Check if unhit pitch crossed Home Plate into the Catcher's Mitt (ONLY if still unhit!)
         if (this.isPitched && !this.inPitcherHole) {
           this.pitchTimer += subDt;
           const dx = this.x - PITCHER_MOUND.x;
@@ -2030,8 +2035,8 @@
           // Progress along line from mound towards home plate
           const progress = (dx - dy) * 0.70710678;
 
-          // Crosses home plate or reaches pitch timeout failsafe
-          if (progress >= 272 || this.pitchTimer > 2.4) {
+          // Crosses completely past home plate into catcher's mitt (progress >= 310)
+          if (progress >= 310 || this.pitchTimer > 2.8) {
             const perpOffset = Math.abs((dx + dy) * 0.70710678);
             const swung = bat.isDragging || Math.abs(bat.angularVel) > 2.2 || bat.isStuck;
 
@@ -2051,13 +2056,10 @@
           }
         }
 
-        // Check if inside pocket tray -> STICK WHERE IT LANDS!
+        // 3. THIRD: Check if inside pocket tray -> STICK WHERE IT LANDS!
         this.checkPocketCapture(subDt);
 
-        // Check collision with bat
-        this.checkBatCollision(bat);
-
-        // Check collisions with cardboard pocket dividers & walls if still rolling
+        // 4. FOURTH: Check collisions with cardboard pocket dividers & walls if still rolling
         if (!this.settledInPocket) {
           this.checkDividersCollision();
           this.checkWallCollisions();
@@ -2109,119 +2111,119 @@
         const closestY = p1.y + t * dy;
 
         const dist = Math.hypot(this.x - closestX, this.y - closestY);
-        const minDist = this.radius + bat.width / 2;
+        const minDist = this.radius + bat.width / 2 + 5; // Generous 5px collision boundary
 
-        if (dist < minDist) {
+        // Continuous Collision Detection (CCD): Check if bat swept through the ball during this substep
+        let isSwept = false;
+        if (typeof bat.prevAngle !== 'undefined' && Math.abs(bat.angularVel) > 0.4) {
+          const ballAngle = Math.atan2(this.y - p1.y, this.x - p1.x);
+          const ballDistToPivot = Math.hypot(this.x - p1.x, this.y - p1.y);
+
+          if (ballDistToPivot >= 18 && ballDistToPivot <= bat.length + this.radius + 14) {
+            const minA = Math.min(bat.prevAngle, bat.angle) - 0.10;
+            const maxA = Math.max(bat.prevAngle, bat.angle) + 0.10;
+            if (ballAngle >= minA && ballAngle <= maxA) {
+              isSwept = true;
+              t = Math.max(0, Math.min(1, (ballDistToPivot - 18) / bat.length));
+            }
+          }
+        }
+
+        if (dist < minDist || isSwept) {
+          // Forward bat swing direction
+          const fwdX = bat.direction > 0 ? -Math.sin(bat.angle) : Math.sin(bat.angle);
+          const fwdY = bat.direction > 0 ? Math.cos(bat.angle) : -Math.cos(bat.angle);
+
           // Collision normal
           let nx = (this.x - closestX) / (dist || 1);
           let ny = (this.y - closestY) / (dist || 1);
 
-          // Bat surface linear velocity at impact point: v = omega x r
-          const rDist = t * bat.length;
-          const batSpeed = bat.angularVel * rDist;
-          // Perpendicular velocity vector of the bat at impact
-          const bvx = -Math.sin(bat.angle) * batSpeed;
-          const bvy = Math.cos(bat.angle) * batSpeed;
+          // Ensure collision normal always pushes forward along the bat's swing
+          if (nx * fwdX + ny * fwdY < 0 || isSwept) {
+            nx = fwdX;
+            ny = fwdY;
+          }
 
-          // Relative velocity
+          // Bat surface linear velocity at impact point: v = omega x r
+          const rDist = Math.max(0.3, t) * bat.length;
+          const batSpeed = bat.angularVel * rDist;
+          const bvx = fwdX * Math.abs(batSpeed);
+          const bvy = fwdY * Math.abs(batSpeed);
+
+          // Relative velocity along normal
           const relVx = this.vx - bvx;
           const relVy = this.vy - bvy;
+          const velAlongNormal = Math.abs(relVx * nx + relVy * ny) + Math.abs(batSpeed) * 0.5;
 
-          const velAlongNormal = relVx * nx + relVy * ny;
-
-          // If moving towards each other, resolve impact impulse
-          if (velAlongNormal < 0) {
-            // Quality of contact based on barrel sweet spot:
-            // Sweet spot is between 0.52 and 0.88 along the bat barrel
-            let barrelQuality = 1.0;
-            if (t < 0.48) {
-              // Jammed on the handle!
-              barrelQuality = 0.35 + 0.65 * Math.max(0, t / 0.48);
-            } else if (t > 0.90) {
-              // Off the end of the bat!
-              barrelQuality = 0.50 + 0.50 * Math.max(0, (1.0 - t) / 0.10);
-            }
-
-            // Quality of contact based on pitch location (chasing balls outside the zone reduces solid contact)
-            const dxMound = this.x - PITCHER_MOUND.x;
-            const dyMound = this.y - PITCHER_MOUND.y;
-            const currPerp = Math.abs((dxMound + dyMound) * 0.70710678);
-            let chasePenalty = 1.0;
-            if (currPerp > 36) {
-              // Reaching for a pitch out of the zone
-              chasePenalty = Math.max(0.45, 1.0 - (currPerp - 36) * 0.015);
-            }
-
-            const totalContactQuality = barrelQuality * chasePenalty;
-            const restitution = 0.85;
-            const impulse = -(1 + restitution) * velAlongNormal * 0.70 * totalContactQuality;
-
-            // Raw velocity along normal + forward bat speed with real punch
-            let rawVx = nx * impulse + bvx * 0.55 * totalContactQuality;
-            let rawVy = ny * impulse + bvy * 0.55 * totalContactQuality;
-            let rawSpeed = Math.hypot(rawVx, rawVy);
-            let rawAngle = Math.atan2(rawVy, rawVx);
-
-            // Dynamic spray angle based on swing contact timing and pitch velocity
-            const pSpeed = this.currentPitchSpeed || 340;
-            const curBatAngle = bat.angle;
-
-            // Timing factor: Early swing pulls ball, Late swing pushes ball
-            // RHB (direction = 1): plate crossed around angle 0.85 rad
-            // LHB (direction = -1): plate crossed around angle -1.85 rad
-            let swingTimingFactor = 0;
-            if (bat.direction > 0) {
-              swingTimingFactor = (curBatAngle - 0.85) / 0.50; // < 0: early/pull, > 0: late/push
-            } else {
-              swingTimingFactor = (curBatAngle - (-1.85)) / -0.50; // < 0: early/pull, > 0: late/push
-            }
-            swingTimingFactor = Math.max(-1.2, Math.min(1.2, swingTimingFactor));
-
-            // Pitch speed timing effect: Fast pitch makes batter late (+push), slow pitch makes batter early (+pull)
-            const pitchTimingFactor = ((pSpeed - 340) / 200.0);
-
-            // Combined deflection (up to +/- 0.75 rad = +/- 43 degrees spray variance across the field!)
-            const totalTimingOffset = swingTimingFactor * 0.48 + pitchTimingFactor * 0.38;
-            const timingDeflection = -totalTimingOffset * (bat.direction > 0 ? 1 : -1);
-
-            // Organic contact jitter (increases when contact is off the sweet spot)
-            const jitterRange = 0.18 + (1.0 - totalContactQuality) * 0.32;
-            const sprayJitter = (Math.random() - 0.5) * jitterRange;
-            const finalAngle = rawAngle + timingDeflection + sprayJitter;
-
-            // Fast, punchy exit speed with great pop off the bat
-            const baseExitSpeed = (Math.abs(batSpeed) * 0.45 + pSpeed * 0.25 + rawSpeed * 0.75) * totalContactQuality;
-            const veloMultiplier = 0.75 + totalContactQuality * 0.40 + (Math.random() - 0.5) * 0.15;
-            let finalSpeed = baseExitSpeed * veloMultiplier;
-            finalSpeed = Math.max(380, Math.min(1600, finalSpeed));
-
-            this.vx = Math.cos(finalAngle) * finalSpeed;
-            this.vy = Math.sin(finalAngle) * finalSpeed;
-
-            // Impart dynamic spin for aerodynamic trajectory curve
-            this.spin = (Math.random() - 0.5) * 280;
-
-            // Cap max ball speed
-            const hitSpeed = Math.hypot(this.vx, this.vy);
-            if (hitSpeed > 1500) {
-              this.vx = (this.vx / hitSpeed) * 1500;
-              this.vy = (this.vy / hitSpeed) * 1500;
-            }
-
-            // Separate bodies to prevent sticking
-            const overlap = minDist - dist;
-            this.x += nx * (overlap + 1.5);
-            this.y += ny * (overlap + 1.5);
-
-            // Mark ball as hit in play
-            this.isPitched = false;
-            this.contactQuality = totalContactQuality;
-
-            sounds.playBatHit(Math.max(0.4, hitSpeed * 0.0035));
-
-            // Trigger exit velo & announcer feedback
-            game.onBatHit(hitSpeed, totalContactQuality);
+          // Quality of contact based on barrel sweet spot
+          let barrelQuality = 1.0;
+          if (t < 0.45) {
+            barrelQuality = 0.40 + 0.60 * Math.max(0, t / 0.45);
+          } else if (t > 0.92) {
+            barrelQuality = 0.55 + 0.45 * Math.max(0, (1.0 - t) / 0.08);
           }
+
+          // Pitch location penalty
+          const dxMound = this.x - PITCHER_MOUND.x;
+          const dyMound = this.y - PITCHER_MOUND.y;
+          const currPerp = Math.abs((dxMound + dyMound) * 0.70710678);
+          let chasePenalty = 1.0;
+          if (currPerp > 36) {
+            chasePenalty = Math.max(0.50, 1.0 - (currPerp - 36) * 0.015);
+          }
+
+          const totalContactQuality = barrelQuality * chasePenalty;
+          const restitution = 0.85;
+          const impulse = (1 + restitution) * velAlongNormal * 0.65 * totalContactQuality;
+
+          // Raw velocity along normal + forward bat speed with real punch
+          let rawVx = nx * impulse + bvx * 0.55 * totalContactQuality;
+          let rawVy = ny * impulse + bvy * 0.55 * totalContactQuality;
+          let rawSpeed = Math.hypot(rawVx, rawVy);
+          let rawAngle = Math.atan2(rawVy, rawVx);
+
+          // Dynamic spray angle based on swing contact timing and pitch velocity
+          const pSpeed = this.currentPitchSpeed || 340;
+          const curBatAngle = bat.angle;
+
+          let swingTimingFactor = 0;
+          if (bat.direction > 0) {
+            swingTimingFactor = (curBatAngle - 0.85) / 0.50;
+          } else {
+            swingTimingFactor = (curBatAngle - (-1.85)) / -0.50;
+          }
+          swingTimingFactor = Math.max(-1.2, Math.min(1.2, swingTimingFactor));
+
+          const pitchTimingFactor = ((pSpeed - 340) / 200.0);
+          const totalTimingOffset = swingTimingFactor * 0.48 + pitchTimingFactor * 0.38;
+          const timingDeflection = -totalTimingOffset * (bat.direction > 0 ? 1 : -1);
+
+          const jitterRange = 0.16 + (1.0 - totalContactQuality) * 0.28;
+          const sprayJitter = (Math.random() - 0.5) * jitterRange;
+          const finalAngle = rawAngle + timingDeflection + sprayJitter;
+
+          // Fast, punchy exit speed with great pop off the bat
+          const baseExitSpeed = (Math.abs(batSpeed) * 0.50 + pSpeed * 0.25 + rawSpeed * 0.75) * totalContactQuality;
+          const veloMultiplier = 0.75 + totalContactQuality * 0.40 + (Math.random() - 0.5) * 0.15;
+          let finalSpeed = baseExitSpeed * veloMultiplier;
+          finalSpeed = Math.max(420, Math.min(1600, finalSpeed));
+
+          this.vx = Math.cos(finalAngle) * finalSpeed;
+          this.vy = Math.sin(finalAngle) * finalSpeed;
+
+          this.spin = (Math.random() - 0.5) * 280;
+
+          // Push ball cleanly off bat surface into play
+          this.x += nx * (minDist + 4);
+          this.y += ny * (minDist + 4);
+
+          // Mark ball as hit in play
+          this.isPitched = false;
+          this.inPlay = true;
+          this.contactQuality = totalContactQuality;
+
+          sounds.playBatHit(Math.max(0.5, finalSpeed * 0.0035));
+          game.onBatHit(finalSpeed, totalContactQuality);
         }
       }
 
