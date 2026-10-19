@@ -1331,53 +1331,54 @@
     const INNER_BOTTOM = BOARD_SIZE - PADDING;
     const INNER_SIZE = INNER_RIGHT - INNER_LEFT; // 780
 
-    // Diamond landmarks
-    const HOME_PLATE = { x: 690, y: 210 };
-    const BASE_1ST = { x: 690, y: 606 };
-    const BASE_3RD = { x: 294, y: 210 };
-    const BASE_2ND = { x: 294, y: 606 };
+    // Diamond landmarks (Home plate and batter at bottom, true diamond infield)
+    const HOME_PLATE = { x: 450, y: 730 };
+    const BASE_1ST = { x: 615, y: 565 };
+    const BASE_2ND = { x: 450, y: 400 };
+    const BASE_3RD = { x: 285, y: 565 };
     const PITCHER_MOUND = { 
-      x: 492, 
-      y: 408 
+      x: 450, 
+      y: 545 
     };
 
     // Cardboard Dividers & Pockets Setup
-    // Pockets on Left wall (4 pockets) and Bottom wall (4 pockets) + Corner HR (1 pocket) = 9 pockets total
-    const POCKET_DEPTH = 135; // depth of pockets extending into the field
+    // 9 Pockets arranged across the top outfield wall:
+    // Left Field (1st, 2nd, 3rd, Out) | Center Field (HOME RUN!) | Right Field (Out, 3rd, 2nd, 1st)
+    const POCKET_DEPTH = 135; // depth of pockets extending down from top wall (Y: 60 to 195)
 
     const pockets = [
-      // Left wall: from top to bottom (hit pockets narrowed, Out pocket expanded!)
+      // Left Field: from foul line to center field
       { id: 'left_1st', name: '1st Base', type: 'single', color: '#f28538', textColor: '#1a0e05',
-        bounds: { x1: INNER_LEFT, y1: INNER_TOP, x2: INNER_LEFT + POCKET_DEPTH, y2: 175 },
-        label: '1st base', labelPos: { x: INNER_LEFT + 55, y: 118, rot: -Math.PI/2 } },
+        bounds: { x1: 60, y1: 60, x2: 145, y2: 195 },
+        label: '1st base', labelPos: { x: 102, y: 128, rot: 0 } },
       { id: 'left_2nd', name: '2nd Base', type: 'double', color: '#9661a8', textColor: '#ffffff',
-        bounds: { x1: INNER_LEFT, y1: 175, x2: INNER_LEFT + POCKET_DEPTH, y2: 275 },
-        label: '2 bs', labelPos: { x: INNER_LEFT + 55, y: 225, rot: -Math.PI/2 } },
+        bounds: { x1: 145, y1: 60, x2: 230, y2: 195 },
+        label: '2 bs', labelPos: { x: 187, y: 128, rot: 0 } },
       { id: 'left_3rd', name: '3rd Base', type: 'triple', color: '#deb336', textColor: '#1a0e05',
-        bounds: { x1: INNER_LEFT, y1: 275, x2: INNER_LEFT + POCKET_DEPTH, y2: 375 },
-        label: '3rd base', labelPos: { x: INNER_LEFT + 55, y: 325, rot: -Math.PI/2 } },
+        bounds: { x1: 230, y1: 60, x2: 315, y2: 195 },
+        label: '3rd base', labelPos: { x: 272, y: 128, rot: 0 } },
       { id: 'left_out', name: 'Out', type: 'out', color: '#7ba6c4', textColor: '#1a0e05',
-        bounds: { x1: INNER_LEFT, y1: 375, x2: INNER_LEFT + POCKET_DEPTH, y2: INNER_BOTTOM - POCKET_DEPTH },
-        label: 'Out', labelPos: { x: INNER_LEFT + 55, y: 540, rot: -Math.PI/2 } },
+        bounds: { x1: 315, y1: 60, x2: 395, y2: 195 },
+        label: 'Out', labelPos: { x: 355, y: 128, rot: 0 } },
 
-      // Corner Pocket: HOME RUN! (Wide open funnel directly from center field into pink pocket)
+      // Center Field: HOME RUN! (Wide 110px pocket right in dead center field)
       { id: 'corner_hr', name: 'HOME RUN!', type: 'hr', color: '#e65c78', textColor: '#ffffff',
-        bounds: { x1: INNER_LEFT, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_LEFT + POCKET_DEPTH + 18, y2: INNER_BOTTOM },
-        label: 'HR', labelPos: { x: INNER_LEFT + 70, y: INNER_BOTTOM - 65, rot: -Math.PI/4 } },
+        bounds: { x1: 395, y1: 60, x2: 505, y2: 195 },
+        label: 'HR', labelPos: { x: 450, y: 128, rot: 0 } },
 
-      // Bottom wall: from left to right (Out expanded to 240px, 2B & 3B narrowed)
+      // Right Field: from center field to right foul line
       { id: 'bot_out', name: 'Out', type: 'out', color: '#7ba6c4', textColor: '#1a0e05',
-        bounds: { x1: INNER_LEFT + POCKET_DEPTH, y1: INNER_BOTTOM - POCKET_DEPTH, x2: 435, y2: INNER_BOTTOM },
-        label: '+ Out', labelPos: { x: 315, y: INNER_BOTTOM - 60, rot: 0 } },
+        bounds: { x1: 505, y1: 60, x2: 585, y2: 195 },
+        label: '+ Out', labelPos: { x: 545, y: 128, rot: 0 } },
       { id: 'bot_3rd', name: '3rd Base', type: 'triple', color: '#deb336', textColor: '#1a0e05',
-        bounds: { x1: 435, y1: INNER_BOTTOM - POCKET_DEPTH, x2: 530, y2: INNER_BOTTOM },
-        label: '3rd base', labelPos: { x: 482, y: INNER_BOTTOM - 60, rot: 0 } },
+        bounds: { x1: 585, y1: 60, x2: 670, y2: 195 },
+        label: '3rd base', labelPos: { x: 627, y: 128, rot: 0 } },
       { id: 'bot_2nd', name: '2nd Base', type: 'double', color: '#9661a8', textColor: '#ffffff',
-        bounds: { x1: 530, y1: INNER_BOTTOM - POCKET_DEPTH, x2: 630, y2: INNER_BOTTOM },
-        label: '2 bs', labelPos: { x: 580, y: INNER_BOTTOM - 60, rot: 0 } },
+        bounds: { x1: 670, y1: 60, x2: 755, y2: 195 },
+        label: '2 bs', labelPos: { x: 712, y: 128, rot: 0 } },
       { id: 'bot_1st', name: '1st Base', type: 'single', color: '#f28538', textColor: '#1a0e05',
-        bounds: { x1: 630, y1: INNER_BOTTOM - POCKET_DEPTH, x2: INNER_RIGHT, y2: INNER_BOTTOM },
-        label: '1st base', labelPos: { x: 735, y: INNER_BOTTOM - 60, rot: 0 } }
+        bounds: { x1: 755, y1: 60, x2: 840, y2: 195 },
+        label: '1st base', labelPos: { x: 797, y: 128, rot: 0 } }
     ];
 
     // Cardboard Divider Walls (thick rigid segments with bouncy deflector tips)
@@ -1388,19 +1389,15 @@
       dividers.push({ x1, y1, x2, y2, thickness });
     }
 
-    // Dividers on Left Wall
-    addDivider(INNER_LEFT, 175, INNER_LEFT + POCKET_DEPTH, 175);
-    addDivider(INNER_LEFT, 275, INNER_LEFT + POCKET_DEPTH, 275);
-    addDivider(INNER_LEFT, 375, INNER_LEFT + POCKET_DEPTH, 375);
-    // Divider between Out and HR leaves an 85px open funnel into the Home Run pocket!
-    addDivider(INNER_LEFT, INNER_BOTTOM - POCKET_DEPTH, INNER_LEFT + 75, INNER_BOTTOM - POCKET_DEPTH);
-
-    // Dividers on Bottom Wall (x1, y1 on outer wall, x2, y2 at inner mouth facing field!)
-    // Divider between HR and Out leaves an 85px open funnel into the Home Run pocket!
-    addDivider(INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM, INNER_LEFT + POCKET_DEPTH, INNER_BOTTOM - 75);
-    addDivider(435, INNER_BOTTOM, 435, INNER_BOTTOM - POCKET_DEPTH);
-    addDivider(530, INNER_BOTTOM, 530, INNER_BOTTOM - POCKET_DEPTH);
-    addDivider(630, INNER_BOTTOM, 630, INNER_BOTTOM - POCKET_DEPTH);
+    // Dividers along the top outfield wall separating the 9 pockets
+    addDivider(145, 60, 145, 195);
+    addDivider(230, 60, 230, 195);
+    addDivider(315, 60, 315, 195);
+    addDivider(395, 60, 395, 195);
+    addDivider(505, 60, 505, 195);
+    addDivider(585, 60, 585, 195);
+    addDivider(670, 60, 670, 195);
+    addDivider(755, 60, 755, 195);
 
     // Outer Cardboard Perimeter Walls
     const outerWalls = [
@@ -1410,13 +1407,13 @@
       { x1: INNER_LEFT, y1: INNER_BOTTOM, x2: INNER_LEFT, y2: INNER_TOP, normal: {x: 1, y: 0} }      // Left wall
     ];
 
-    // Infield Pitcher Cutout Hole (Ground Out trap)
+    // Infield Pitcher Cutout Hole (Vertical slot in center of mound)
     const PITCHER_HOLE = {
       x: PITCHER_MOUND.x,
       y: PITCHER_MOUND.y,
-      width: 48,
-      height: 90,
-      angle: Math.PI / 4 // angled along pitch line
+      width: 36,
+      height: 64,
+      angle: 0 // aligned vertically with pitch line
     };
 
     /* =========================================================================
@@ -1452,31 +1449,31 @@
         this.isDragging = false;
 
         if (this.hand === 'right') {
-          // Right-Handed Batter standing in the 3rd-base side batter's box
-          this.pivot = { x: 580, y: 100 };
-          this.screw = { x: 505, y: 285 };
-          this.direction = 1; // clockwise swing through plate
+          // Right-Handed Batter standing on 3rd-base side (viewer's left of plate)
+          this.pivot = { x: 355, y: 745 };
+          this.screw = { x: 385, y: 660 };
+          this.direction = -1; // counter-clockwise swing through plate toward 1B / right field
 
           // Resting against forward follow-through stopper (past home plate)
-          this.restAngle = 1.62; // ~93 deg (pointing down towards 1st base line)
+          this.restAngle = -0.70; // ~-40 deg (pointing up-right toward 1st base line)
           // Cocked back loaded in the batter's box behind home plate
-          this.minAngle = -0.32; // ~-18 deg (pointing up-right toward backstop)
+          this.minAngle = 2.65;   // ~152 deg (cocked back to left/down-left)
           // Physical forward stopper limit
-          this.maxAngle = 1.76;  // ~101 deg
-          this.stopperPos = { x: 562, y: 245 };
+          this.maxAngle = -0.78;  // ~-45 deg
+          this.stopperPos = { x: 425, y: 690 };
         } else {
-          // Left-Handed Batter standing in the 1st-base side batter's box
-          this.pivot = { x: 800, y: 320 };
-          this.screw = { x: 675, y: 395 };
-          this.direction = -1; // counter-clockwise swing through plate
+          // Left-Handed Batter standing on 1st-base side (viewer's right of plate)
+          this.pivot = { x: 545, y: 745 };
+          this.screw = { x: 515, y: 660 };
+          this.direction = 1; // clockwise swing through plate toward 3B / left field
 
           // Resting against forward follow-through stopper (past home plate)
-          this.restAngle = -2.75; // ~-158 deg (pointing up-left towards 3rd base line)
+          this.restAngle = 3.84; // ~220 deg (pointing up-left toward 3rd base line)
           // Cocked back loaded in the LHB box behind home plate
-          this.minAngle = -0.82;  // ~-47 deg (pointing up-right toward backstop)
+          this.minAngle = 0.49;  // ~28 deg (cocked back to right/down-right)
           // Physical forward stopper limit
-          this.maxAngle = -2.90;  // ~-166 deg
-          this.stopperPos = { x: 648, y: 285 };
+          this.maxAngle = 3.92;  // ~225 deg
+          this.stopperPos = { x: 475, y: 690 };
         }
 
         this.angle = this.restAngle;
@@ -1528,10 +1525,10 @@
           const diff = this.targetAngle - this.angle;
           this.angularVel = diff * 45;
           this.angle += this.angularVel * subDt;
-          if (this.direction > 0) {
-            this.tension = Math.max(0, Math.min(1, (this.restAngle - this.angle) / (this.restAngle - this.minAngle)));
-          } else {
+          if (this.direction < 0) {
             this.tension = Math.max(0, Math.min(1, (this.angle - this.restAngle) / (this.minAngle - this.restAngle)));
+          } else {
+            this.tension = Math.max(0, Math.min(1, (this.restAngle - this.angle) / (this.restAngle - this.minAngle)));
           }
         } else if (this.isStuck) {
           // Bat STICKS where it lands at the follow-through stopper!
@@ -1542,24 +1539,24 @@
         } else {
           // Rubber band spring acceleration through the plate with subtle organic flutter
           let springTorque = 0;
-          if (this.direction > 0) {
-            // RHB: clockwise swing
-            if (this.angle < this.restAngle) {
-              const pullDeflection = this.restAngle - this.angle;
-              springTorque = this.springK * Math.pow(pullDeflection, 1.15);
-              this.tension = Math.max(0, Math.min(1, pullDeflection / (this.restAngle - this.minAngle)));
-            } else {
-              springTorque = this.springK * 0.35;
-              this.tension = 0;
-            }
-          } else {
-            // LHB: counter-clockwise swing
+          if (this.direction < 0) {
+            // RHB: counter-clockwise swing (decreasing angle from minAngle to restAngle)
             if (this.angle > this.restAngle) {
               const pullDeflection = this.angle - this.restAngle;
               springTorque = -this.springK * Math.pow(pullDeflection, 1.15);
               this.tension = Math.max(0, Math.min(1, pullDeflection / (this.minAngle - this.restAngle)));
             } else {
               springTorque = -this.springK * 0.35;
+              this.tension = 0;
+            }
+          } else {
+            // LHB: clockwise swing (increasing angle from minAngle to restAngle)
+            if (this.angle < this.restAngle) {
+              const pullDeflection = this.restAngle - this.angle;
+              springTorque = this.springK * Math.pow(pullDeflection, 1.15);
+              this.tension = Math.max(0, Math.min(1, pullDeflection / (this.restAngle - this.minAngle)));
+            } else {
+              springTorque = this.springK * 0.35;
               this.tension = 0;
             }
           }
@@ -1572,22 +1569,7 @@
           this.angle += this.angularVel * subDt;
 
           // Impact with forward cardboard stopper -> Bat STICKS where it lands!
-          if (this.direction > 0) {
-            if (this.angle >= this.maxAngle) {
-              this.angle = this.maxAngle;
-              this.angularVel = 0;
-              this.angularAccel = 0;
-              this.isStuck = true; // Sticks at finish!
-              this.flutterAmp = 0.05;
-              this.flutterTime = 0.12;
-              sounds.playWallBounce(2.2);
-              sounds.playSnap();
-            }
-            if (this.angle < this.minAngle) {
-              this.angle = this.minAngle;
-              this.angularVel = 0;
-            }
-          } else {
+          if (this.direction < 0) {
             if (this.angle <= this.maxAngle) {
               this.angle = this.maxAngle;
               this.angularVel = 0;
@@ -1599,6 +1581,21 @@
               sounds.playSnap();
             }
             if (this.angle > this.minAngle) {
+              this.angle = this.minAngle;
+              this.angularVel = 0;
+            }
+          } else {
+            if (this.angle >= this.maxAngle) {
+              this.angle = this.maxAngle;
+              this.angularVel = 0;
+              this.angularAccel = 0;
+              this.isStuck = true; // Sticks at finish!
+              this.flutterAmp = 0.05;
+              this.flutterTime = 0.12;
+              sounds.playWallBounce(2.2);
+              sounds.playSnap();
+            }
+            if (this.angle < this.minAngle) {
               this.angle = this.minAngle;
               this.angularVel = 0;
             }
@@ -1928,9 +1925,9 @@
           perpOffset = sign * (42 + Math.random() * 38);
         }
 
-        // Target coordinates along perpendicular axis
-        const targetX = HOME_PLATE.x + perpOffset * 0.70710678;
-        const targetY = HOME_PLATE.y + perpOffset * 0.70710678;
+        // Target coordinates along horizontal strike line (pitch moves down along +Y)
+        const targetX = HOME_PLATE.x + perpOffset;
+        const targetY = HOME_PLATE.y;
         const dx = targetX - this.x;
         const dy = targetY - this.y;
         const dist = Math.hypot(dx, dy);
@@ -2030,14 +2027,10 @@
         // 2. SECOND: Check if unhit pitch crossed Home Plate into the Catcher's Mitt (ONLY if still unhit!)
         if (this.isPitched && !this.inPitcherHole) {
           this.pitchTimer += subDt;
-          const dx = this.x - PITCHER_MOUND.x;
-          const dy = this.y - PITCHER_MOUND.y;
-          // Progress along line from mound towards home plate
-          const progress = (dx - dy) * 0.70710678;
 
-          // Crosses completely past home plate into catcher's mitt (progress >= 310)
-          if (progress >= 310 || this.pitchTimer > 2.8) {
-            const perpOffset = Math.abs((dx + dy) * 0.70710678);
+          // Crosses completely past home plate into catcher's mitt (y >= 765)
+          if (this.y >= 765 || this.pitchTimer > 2.8) {
+            const perpOffset = Math.abs(this.x - HOME_PLATE.x);
             const swung = bat.isDragging || Math.abs(bat.angularVel) > 2.2 || bat.isStuck;
 
             this.isPitched = false;
@@ -2071,7 +2064,7 @@
           this.inPlay = false;
           this.vx = 0;
           this.vy = 0;
-          const isFoul = (this.x > HOME_PLATE.x || this.y < HOME_PLATE.y);
+          const isFoul = (this.y > HOME_PLATE.y - Math.abs(this.x - HOME_PLATE.x) + 6);
           sounds.playPocket('out');
           game.handleOutcome(isFoul ? 'foul' : 'out', isFoul ? 'Foul Ball' : 'Outfield Flyout - Out!');
         }
@@ -2120,8 +2113,8 @@
           const ballDistToPivot = Math.hypot(this.x - p1.x, this.y - p1.y);
 
           if (ballDistToPivot >= 18 && ballDistToPivot <= bat.length + this.radius + 14) {
-            const minA = Math.min(bat.prevAngle, bat.angle) - 0.10;
-            const maxA = Math.max(bat.prevAngle, bat.angle) + 0.10;
+            const minA = Math.min(bat.prevAngle, bat.angle) - 0.12;
+            const maxA = Math.max(bat.prevAngle, bat.angle) + 0.12;
             if (ballAngle >= minA && ballAngle <= maxA) {
               isSwept = true;
               t = Math.max(0, Math.min(1, (ballDistToPivot - 18) / bat.length));
@@ -2130,15 +2123,15 @@
         }
 
         if (dist < minDist || isSwept) {
-          // Forward bat swing direction
-          const fwdX = bat.direction > 0 ? -Math.sin(bat.angle) : Math.sin(bat.angle);
-          const fwdY = bat.direction > 0 ? Math.cos(bat.angle) : -Math.cos(bat.angle);
+          // Forward bat swing direction (bat.direction < 0 is RHB swinging CCW, bat.direction > 0 is LHB swinging CW)
+          const fwdX = bat.direction < 0 ? Math.sin(bat.angle) : -Math.sin(bat.angle);
+          const fwdY = bat.direction < 0 ? -Math.cos(bat.angle) : Math.cos(bat.angle);
 
           // Collision normal
           let nx = (this.x - closestX) / (dist || 1);
           let ny = (this.y - closestY) / (dist || 1);
 
-          // Ensure collision normal always pushes forward along the bat's swing
+          // Ensure collision normal always pushes forward along the bat's swing into fair field
           if (nx * fwdX + ny * fwdY < 0 || isSwept) {
             nx = fwdX;
             ny = fwdY;
@@ -2164,9 +2157,7 @@
           }
 
           // Pitch location penalty
-          const dxMound = this.x - PITCHER_MOUND.x;
-          const dyMound = this.y - PITCHER_MOUND.y;
-          const currPerp = Math.abs((dxMound + dyMound) * 0.70710678);
+          const currPerp = Math.abs(this.x - HOME_PLATE.x);
           let chasePenalty = 1.0;
           if (currPerp > 36) {
             chasePenalty = Math.max(0.50, 1.0 - (currPerp - 36) * 0.015);
@@ -2187,20 +2178,27 @@
           const curBatAngle = bat.angle;
 
           let swingTimingFactor = 0;
-          if (bat.direction > 0) {
-            swingTimingFactor = (curBatAngle - 0.85) / 0.50;
+          if (bat.direction < 0) {
+            // RHB: plate crossed around -0.32 rad
+            swingTimingFactor = (curBatAngle - (-0.32)) / 0.40;
           } else {
-            swingTimingFactor = (curBatAngle - (-1.85)) / -0.50;
+            // LHB: plate crossed around 3.46 rad
+            swingTimingFactor = (3.46 - curBatAngle) / 0.40;
           }
           swingTimingFactor = Math.max(-1.2, Math.min(1.2, swingTimingFactor));
 
           const pitchTimingFactor = ((pSpeed - 340) / 200.0);
-          const totalTimingOffset = swingTimingFactor * 0.48 + pitchTimingFactor * 0.38;
-          const timingDeflection = -totalTimingOffset * (bat.direction > 0 ? 1 : -1);
+          const totalTimingOffset = swingTimingFactor * 0.42 + pitchTimingFactor * 0.32;
+          const timingDeflection = totalTimingOffset * (bat.direction < 0 ? -1 : 1);
 
           const jitterRange = 0.16 + (1.0 - totalContactQuality) * 0.28;
           const sprayJitter = (Math.random() - 0.5) * jitterRange;
-          const finalAngle = rawAngle + timingDeflection + sprayJitter;
+          let finalAngle = rawAngle + timingDeflection + sprayJitter;
+
+          // Always ensure final trajectory propels upward into fair/outfield territory
+          if (Math.sin(finalAngle) > -0.2) {
+            finalAngle = -Math.PI / 2 + (Math.random() - 0.5) * 1.1;
+          }
 
           // Fast, punchy exit speed with great pop off the bat
           const baseExitSpeed = (Math.abs(batSpeed) * 0.50 + pSpeed * 0.25 + rawSpeed * 0.75) * totalContactQuality;
@@ -2336,7 +2334,7 @@
               this.vx = 0;
               this.vy = 0;
               // Check if foul or infield grounder
-              const isFoul = (this.x > HOME_PLATE.x || this.y < HOME_PLATE.y);
+              const isFoul = (this.y > (HOME_PLATE.y - Math.abs(this.x - HOME_PLATE.x) + 6));
               if (isFoul) {
                 sounds.playPocket('out');
                 game.handleOutcome('foul', 'Foul Ball');
@@ -2989,24 +2987,24 @@
         ctx.stroke();
       }
 
-      // Green Construction Paper Outfield (as seen in photo)
+      // Green Construction Paper Outfield across fair territory
       ctx.save();
       ctx.fillStyle = '#699e69';
-      // Fill outfield area excluding the brown infield diamond
       ctx.beginPath();
-      ctx.moveTo(INNER_LEFT, INNER_TOP);
-      ctx.lineTo(INNER_LEFT + 260, INNER_TOP);
-      ctx.lineTo(INNER_LEFT + 260, INNER_BOTTOM - 260);
-      ctx.lineTo(INNER_RIGHT, INNER_BOTTOM - 260);
-      ctx.lineTo(INNER_RIGHT, INNER_BOTTOM);
-      ctx.lineTo(INNER_LEFT, INNER_BOTTOM);
+      ctx.moveTo(INNER_LEFT, INNER_TOP + POCKET_DEPTH);
+      ctx.lineTo(INNER_RIGHT, INNER_TOP + POCKET_DEPTH);
+      ctx.lineTo(INNER_RIGHT, 340); // right foul pole at wall
+      ctx.lineTo(BASE_1ST.x, BASE_1ST.y); // 1st base
+      // Smooth outfield grass arc sweeping behind 2nd base
+      ctx.quadraticCurveTo(PITCHER_MOUND.x, BASE_2ND.y - 45, BASE_3RD.x, BASE_3RD.y);
+      ctx.lineTo(INNER_LEFT, 340); // left foul pole at wall
       ctx.closePath();
       ctx.fill();
 
       // Paper grain noise texture on green outfield
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.03)';
       ctx.lineWidth = 1;
-      for (let y = INNER_TOP; y < INNER_BOTTOM; y += 4) {
+      for (let y = INNER_TOP + POCKET_DEPTH; y < 450; y += 4) {
         ctx.beginPath();
         ctx.moveTo(INNER_LEFT, y);
         ctx.lineTo(INNER_RIGHT, y);
@@ -3014,7 +3012,7 @@
       }
       ctx.restore();
 
-      // Brown Cardboard Infield Diamond
+      // Brown Cardboard Infield Diamond (true diamond shape)
       ctx.save();
       ctx.fillStyle = '#be925f';
       ctx.beginPath();
@@ -3025,25 +3023,33 @@
       ctx.closePath();
       ctx.fill();
 
-      // Black Marker Infield Foul Lines (drawn with marker in the real game)
+      // Black Marker Infield Foul Lines (drawn from home plate out to outfield fence)
       ctx.strokeStyle = '#2b1d12';
       ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      // 1st base foul line along right edge extending down to outfield
+      // 1st base foul line along right edge out to right fence
       ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y);
-      ctx.lineTo(BASE_1ST.x, INNER_BOTTOM - POCKET_DEPTH);
-      // 3rd base foul line along top edge extending left to outfield
+      ctx.lineTo(INNER_RIGHT, 340);
+      // 3rd base foul line along left edge out to left fence
       ctx.moveTo(HOME_PLATE.x, HOME_PLATE.y);
-      ctx.lineTo(INNER_LEFT + POCKET_DEPTH, BASE_3RD.y);
+      ctx.lineTo(INNER_LEFT, 340);
       ctx.stroke();
+
+      // White Masking Tape Foul Poles at fence intersections
+      ctx.fillStyle = 'rgba(250, 248, 240, 0.95)';
+      ctx.fillRect(INNER_LEFT - 2, 332, 16, 16);
+      ctx.fillRect(INNER_RIGHT - 14, 332, 16, 16);
+      ctx.strokeStyle = '#85592e';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(INNER_LEFT - 2, 332, 16, 16);
+      ctx.strokeRect(INNER_RIGHT - 14, 332, 16, 16);
       ctx.restore();
 
-      // Authentic Masking Tape / Chalk Batter's Boxes (Rotated 90 deg so long side runs parallel to pitch path!)
+      // Authentic Masking Tape / Chalk Batter's Boxes (aligned with pitch path)
       const drawBatterBox = (cx, cy, isCurrent, label) => {
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.rotate(Math.PI * 0.25); // 45 deg (parallel to pitch line towards mound)
 
         const bw = 54;
         const bl = 96;
@@ -3065,13 +3071,13 @@
         if (isCurrent) {
           ctx.fillStyle = 'rgba(245, 240, 225, 0.75)';
           const toeSign = label === 'RHB' ? 1 : -1;
-          // Front cleat (toward pitcher: +Y in local coords, toes facing plate)
+          // Front cleat (toward pitcher: -Y, toes facing plate)
           ctx.beginPath();
-          ctx.ellipse(toeSign * 2, 22, 13, 6, 0, 0, Math.PI * 2);
+          ctx.ellipse(toeSign * 4, -20, 6, 13, 0, 0, Math.PI * 2);
           ctx.fill();
-          // Back cleat (toward catcher: -Y in local coords, toes facing plate)
+          // Back cleat (toward catcher: +Y, toes facing plate)
           ctx.beginPath();
-          ctx.ellipse(toeSign * 2, -22, 13, 6, 0, 0, Math.PI * 2);
+          ctx.ellipse(toeSign * 4, 20, 6, 13, 0, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -3084,35 +3090,34 @@
         ctx.restore();
       };
 
-      // Right-Handed Batter Box (on 3rd base side: top/left)
-      drawBatterBox(637, 157, game.bat.hand === 'right', 'RHB');
-      // Left-Handed Batter Box (on 1st base side: bottom/right)
-      drawBatterBox(743, 263, game.bat.hand === 'left', 'LHB');
+      // Right-Handed Batter Box (on 3rd base side: viewer's left of plate)
+      drawBatterBox(378, 730, game.bat.hand === 'right', 'RHB');
+      // Left-Handed Batter Box (on 1st base side: viewer's right of plate)
+      drawBatterBox(522, 730, game.bat.hand === 'left', 'LHB');
 
-      // Authentic Home Plate Pentagon (flat face toward pitcher at 135 deg, pointed apex toward catcher at -45 deg)
+      // Authentic Home Plate Pentagon (flat front edge facing pitcher, pointed apex toward catcher at bottom)
       ctx.save();
       ctx.translate(HOME_PLATE.x, HOME_PLATE.y);
-      ctx.rotate(Math.PI * 0.25); // 45 deg: flat front edge faces pitcher's mound, apex points back to catcher!
 
       // Plate drop shadow
       ctx.fillStyle = 'rgba(40, 20, 5, 0.32)';
       ctx.beginPath();
-      ctx.moveTo(-21 + 2, 21 + 2);
-      ctx.lineTo(21 + 2, 21 + 2);
-      ctx.lineTo(21 + 2, -4 + 2);
-      ctx.lineTo(0 + 2, -25 + 2);
-      ctx.lineTo(-21 + 2, -4 + 2);
+      ctx.moveTo(-21 + 2, -12 + 2);
+      ctx.lineTo(21 + 2, -12 + 2);
+      ctx.lineTo(21 + 2, 6 + 2);
+      ctx.lineTo(0 + 2, 24 + 2);
+      ctx.lineTo(-21 + 2, 6 + 2);
       ctx.closePath();
       ctx.fill();
 
       // Semi-translucent textured white masking tape plate
       ctx.fillStyle = 'rgba(250, 248, 240, 0.96)';
       ctx.beginPath();
-      ctx.moveTo(-21, 21);
-      ctx.lineTo(21, 21);
-      ctx.lineTo(21, -4);
-      ctx.lineTo(0, -25);
-      ctx.lineTo(-21, -4);
+      ctx.moveTo(-21, -12);
+      ctx.lineTo(21, -12);
+      ctx.lineTo(21, 6);
+      ctx.lineTo(0, 24);
+      ctx.lineTo(-21, 6);
       ctx.closePath();
       ctx.fill();
 
@@ -3130,8 +3135,8 @@
 
       ctx.restore();
 
-      // White Masking Tape Bases (1st, 2nd, 3rd)
-      const drawTapeBase = (x, y, w = 34, h = 34, rot = 0) => {
+      // White Masking Tape Bases rotated 45 deg (1st, 2nd, 3rd diamonds)
+      const drawTapeBase = (x, y, w = 34, h = 34, rot = Math.PI * 0.25) => {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(rot);
@@ -3145,9 +3150,9 @@
         ctx.restore();
       };
 
-      drawTapeBase(BASE_1ST.x, BASE_1ST.y, 36, 36);
-      drawTapeBase(BASE_2ND.x, BASE_2ND.y, 36, 36);
-      drawTapeBase(BASE_3RD.x, BASE_3RD.y, 36, 36);
+      drawTapeBase(BASE_1ST.x, BASE_1ST.y, 34, 34);
+      drawTapeBase(BASE_2ND.x, BASE_2ND.y, 34, 34);
+      drawTapeBase(BASE_3RD.x, BASE_3RD.y, 34, 34);
 
       // Black rubber batting tee base on Home Plate
       ctx.save();
@@ -3165,7 +3170,7 @@
       ctx.restore();
 
       // Cardboard Bat Stopper Peg (physically stops the bat after swinging through the plate)
-      const stopper = game.bat.stopperPos || { x: 562, y: 245 };
+      const stopper = game.bat.stopperPos || { x: 425, y: 690 };
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.3)';
       ctx.fillRect(stopper.x - 7 + 3, stopper.y - 14 + 4, 14, 28);
@@ -3178,7 +3183,25 @@
       ctx.fillRect(stopper.x - 7, stopper.y - 6, 14, 12);
       ctx.restore();
 
-      // Pitcher's Mound Hole Cutout (Angled rectangle with deep cardboard shadow)
+      // Pitcher's Mound Circle
+      ctx.save();
+      ctx.fillStyle = '#b3824f';
+      ctx.beginPath();
+      ctx.arc(PITCHER_MOUND.x, PITCHER_MOUND.y, 38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#8c5a2b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Pitcher's rubber plate
+      ctx.fillStyle = 'rgba(250, 248, 240, 0.95)';
+      ctx.fillRect(PITCHER_MOUND.x - 16, PITCHER_MOUND.y - 24, 32, 7);
+      ctx.strokeStyle = '#2b1d12';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(PITCHER_MOUND.x - 16, PITCHER_MOUND.y - 24, 32, 7);
+      ctx.restore();
+
+      // Pitcher's Mound Hole Cutout (Vertical rectangular slot)
       ctx.save();
       ctx.translate(PITCHER_HOLE.x, PITCHER_HOLE.y);
       ctx.rotate(PITCHER_HOLE.angle);
@@ -3308,7 +3331,7 @@
       const batTip = game.bat.getTip();
       const dPivot = Math.hypot(pos.x - game.bat.pivot.x, pos.y - game.bat.pivot.y);
       const dTip = Math.hypot(pos.x - batTip.x, pos.y - batTip.y);
-      const inBatZone = (pos.x > 450 && pos.x < 890 && pos.y > 20 && pos.y < 460);
+      const inBatZone = (pos.x > 250 && pos.x < 650 && pos.y > 580);
 
       if (dTip < 130 || dPivot < 210 || inBatZone) {
         game.bat.isStuck = false; // unstick on grab!
@@ -3328,19 +3351,19 @@
       const dy = pos.y - game.bat.pivot.y;
       let angle = Math.atan2(dy, dx);
 
-      if (game.bat.direction > 0) {
-        // RHB: clamp between minAngle and restAngle
-        angle = Math.max(game.bat.minAngle, Math.min(game.bat.restAngle, angle));
-        game.bat.targetAngle = angle;
-        game.bat.angle = angle;
-        game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - angle) / (game.bat.restAngle - game.bat.minAngle)));
-      } else {
-        // LHB: clamp between restAngle and minAngle
-        if (angle > 0) angle = game.bat.minAngle;
+      if (game.bat.direction < 0) {
+        // RHB: pivot (355, 745), active arc: restAngle (-0.70) to minAngle (2.65)
         angle = Math.max(game.bat.restAngle, Math.min(game.bat.minAngle, angle));
         game.bat.targetAngle = angle;
         game.bat.angle = angle;
         game.bat.tension = Math.max(0, Math.min(1, (angle - game.bat.restAngle) / (game.bat.minAngle - game.bat.restAngle)));
+      } else {
+        // LHB: pivot (545, 745), active arc: minAngle (0.49) to restAngle (3.84)
+        if (angle < 0) angle += Math.PI * 2;
+        angle = Math.max(game.bat.minAngle, Math.min(game.bat.restAngle, angle));
+        game.bat.targetAngle = angle;
+        game.bat.angle = angle;
+        game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - angle) / (game.bat.restAngle - game.bat.minAngle)));
       }
 
       // Play audio stretch creak proportional to pull
@@ -3387,14 +3410,14 @@
         e.preventDefault();
         game.bat.isStuck = false; // unstick on key pull!
         game.bat.isDragging = true;
-        if (game.bat.direction > 0) {
-          game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.08);
-          game.bat.angle = game.bat.targetAngle;
-          game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - game.bat.angle) / (game.bat.restAngle - game.bat.minAngle)));
-        } else {
+        if (game.bat.direction < 0) {
           game.bat.targetAngle = Math.min(game.bat.minAngle, game.bat.angle + 0.08);
           game.bat.angle = game.bat.targetAngle;
           game.bat.tension = Math.max(0, Math.min(1, (game.bat.angle - game.bat.restAngle) / (game.bat.minAngle - game.bat.restAngle)));
+        } else {
+          game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.08);
+          game.bat.angle = game.bat.targetAngle;
+          game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - game.bat.angle) / (game.bat.restAngle - game.bat.minAngle)));
         }
         sounds.playStretch(game.bat.tension);
       }
@@ -3501,14 +3524,14 @@
       if (flickPullInterval) clearInterval(flickPullInterval);
       flickPullInterval = setInterval(() => {
         if (game.bat.isDragging) {
-          if (game.bat.direction > 0) {
-            game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.07);
-            game.bat.angle = game.bat.targetAngle;
-            game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - game.bat.angle) / (game.bat.restAngle - game.bat.minAngle)));
-          } else {
+          if (game.bat.direction < 0) {
             game.bat.targetAngle = Math.min(game.bat.minAngle, game.bat.angle + 0.07);
             game.bat.angle = game.bat.targetAngle;
             game.bat.tension = Math.max(0, Math.min(1, (game.bat.angle - game.bat.restAngle) / (game.bat.minAngle - game.bat.restAngle)));
+          } else {
+            game.bat.targetAngle = Math.max(game.bat.minAngle, game.bat.angle - 0.07);
+            game.bat.angle = game.bat.targetAngle;
+            game.bat.tension = Math.max(0, Math.min(1, (game.bat.restAngle - game.bat.angle) / (game.bat.restAngle - game.bat.minAngle)));
           }
           sounds.playStretch(game.bat.tension);
         }
