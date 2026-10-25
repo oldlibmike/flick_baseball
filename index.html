@@ -61,7 +61,7 @@
     /* Header & Navigation Bar */
     header {
       width: 100%;
-      max-width: 1020px;
+      max-width: 1180px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -135,14 +135,14 @@
     /* Main Container */
     .game-layout {
       width: 100%;
-      max-width: 1020px;
+      max-width: 1180px;
       display: grid;
-      grid-template-columns: 1fr 310px;
-      gap: 16px;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
       align-items: start;
     }
 
-    @media (max-width: 880px) {
+    @media (max-width: 920px) {
       .game-layout {
         grid-template-columns: 1fr;
       }
@@ -166,8 +166,8 @@
       position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
-      max-width: 650px;
-      max-height: 650px;
+      max-width: min(780px, calc(100vh - 180px));
+      max-height: min(780px, calc(100vh - 180px));
       border-radius: 14px;
       overflow: hidden;
       box-shadow: 
@@ -736,6 +736,343 @@
       margin-top: 4px;
     }
 
+    /* =========================================================================
+       EPIC HOME RUN CELEBRATION STYLES
+       ========================================================================= */
+
+    /* Cardboard Arena Camera Rumble / Shake */
+    @keyframes hrRumble {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      12% { transform: translate(-6px, 4px) rotate(-0.6deg); }
+      24% { transform: translate(7px, -4px) rotate(0.6deg); }
+      36% { transform: translate(-5px, -3px) rotate(-0.4deg); }
+      48% { transform: translate(6px, 5px) rotate(0.5deg); }
+      60% { transform: translate(-4px, 3px) rotate(-0.3deg); }
+      72% { transform: translate(4px, -2px) rotate(0.2deg); }
+      84% { transform: translate(-2px, 1px) rotate(-0.1deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    .canvas-container.hr-screen-shake {
+      animation: hrRumble 0.75s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Full Arena Home Run Overlay */
+    .hr-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 70;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.82) 0%, rgba(10, 14, 20, 0.94) 80%);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 16px;
+    }
+
+    .hr-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    /* Stadium Strobe & Press Camera Flashes */
+    .hr-strobe {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.75) 0%, rgba(254, 240, 138, 0.35) 40%, transparent 75%);
+      opacity: 0;
+    }
+
+    .hr-overlay.active .hr-strobe {
+      animation: hrStrobeFlashes 1.4s ease-out forwards;
+    }
+
+    @keyframes hrStrobeFlashes {
+      0% { opacity: 0.95; }
+      15% { opacity: 0.1; }
+      30% { opacity: 0.85; }
+      45% { opacity: 0.05; }
+      60% { opacity: 0.75; }
+      80% { opacity: 0.1; }
+      100% { opacity: 0; }
+    }
+
+    /* Rotating Sunburst Light Rays */
+    .hr-sunburst {
+      position: absolute;
+      width: 160%;
+      height: 160%;
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(248, 194, 51, 0.18) 0deg 12deg,
+        transparent 12deg 24deg
+      );
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.8;
+      animation: hrSpinSunburst 16s linear infinite;
+    }
+
+    @keyframes hrSpinSunburst {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Cardboard Trophy Card */
+    .hr-card {
+      position: relative;
+      z-index: 2;
+      width: 92%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transform: scale(0.65) translateY(30px);
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .hr-overlay.active .hr-card {
+      transform: scale(1) translateY(0);
+    }
+
+    /* Top Ribbon Badge */
+    .hr-badge-ribbon {
+      display: inline-block;
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #1a0e05;
+      font-family: var(--font-score);
+      font-size: 0.92rem;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      padding: 5px 20px;
+      border-radius: 9999px;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.45);
+      border: 2px solid #fef08a;
+      margin-bottom: 8px;
+      animation: hrBadgeBounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    @keyframes hrBadgeBounce {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 3D Extruded Vintage Arcade HOME RUN Title */
+    .hr-title-wrap {
+      position: relative;
+      margin: 2px 0 10px 0;
+    }
+
+    .hr-title {
+      font-family: var(--font-marker);
+      font-size: clamp(3.2rem, 8vw, 4.8rem);
+      line-height: 1.05;
+      letter-spacing: 3px;
+      color: #fff;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 0%, #fff3b0 25%, #ffcc00 48%, #ff6f00 78%, #d81b60 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 3px 0 #7f1d1d) drop-shadow(0 7px 0 #450a0a) drop-shadow(0 14px 20px rgba(0, 0, 0, 0.9));
+      animation: hrTitlePulse 1.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes hrTitlePulse {
+      0% { transform: scale(1) rotate(-1deg); }
+      100% { transform: scale(1.06) rotate(1deg); }
+    }
+
+    /* Grand Slam Special Flamboyant Flair */
+    .hr-grandslam-banner {
+      display: none;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #ec4899, #8b5cf6, #ef4444);
+      background-size: 300% 100%;
+      animation: hrGrandSlamShift 2.5s linear infinite, hrGrandSlamGlow 1.2s ease-in-out infinite alternate;
+      color: #fff;
+      font-family: var(--font-score);
+      font-size: clamp(0.95rem, 2.8vw, 1.2rem);
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      padding: 6px 20px;
+      border-radius: 30px;
+      margin-bottom: 12px;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.7);
+      border: 2px solid #fff;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+    }
+
+    .hr-grandslam-banner.visible {
+      display: inline-block;
+    }
+
+    @keyframes hrGrandSlamShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    @keyframes hrGrandSlamGlow {
+      0% { transform: scale(0.97); box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+      100% { transform: scale(1.04); box-shadow: 0 0 30px rgba(245, 158, 11, 0.95); }
+    }
+
+    /* Stats Row (Distance, Velo, Runs) */
+    .hr-stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hr-stat-pill {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(248, 194, 51, 0.45);
+      border-radius: 12px;
+      padding: 6px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 95px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .hr-stat-icon {
+      font-size: 1.1rem;
+      margin-bottom: 2px;
+    }
+
+    .hr-stat-val {
+      font-family: var(--font-score);
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #fef08a;
+      text-shadow: 0 0 8px rgba(248, 194, 51, 0.6);
+    }
+
+    .hr-stat-lbl {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    /* Batter Spotlight */
+    .hr-batter-spotlight {
+      background: rgba(30, 41, 59, 0.75);
+      border-radius: 12px;
+      padding: 8px 18px;
+      margin-bottom: 12px;
+      width: 100%;
+      max-width: 420px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .hr-batter-tag {
+      font-family: var(--font-score);
+      font-size: 1rem;
+      font-weight: 800;
+      color: #67e8f9;
+      text-shadow: 0 0 10px rgba(103, 232, 249, 0.4);
+    }
+
+    .hr-batter-desc {
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Base Trot Tracker */
+    .hr-trot-track {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1.5px solid rgba(248, 194, 51, 0.5);
+      border-radius: 16px;
+      padding: 10px 18px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hr-trot-diamond {
+      position: relative;
+      width: 130px;
+      height: 90px;
+      margin: 4px 0;
+    }
+
+    .hr-trot-node {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #334155;
+      border: 2px solid #64748b;
+      color: #94a3b8;
+      font-family: var(--font-score);
+      font-size: 0.7rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -50%) rotate(45deg);
+      transition: all 0.25s ease;
+    }
+
+    .hr-trot-node.hit {
+      background: #f59e0b;
+      border-color: #fef08a;
+      color: #1e1b4b;
+      box-shadow: 0 0 16px #f59e0b, 0 0 28px rgba(254, 240, 138, 0.8);
+      transform: translate(-50%, -50%) rotate(45deg) scale(1.22);
+    }
+
+    .base-hp { left: 50%; top: 82%; }
+    .base-1b { left: 88%; top: 48%; }
+    .base-2b { left: 50%; top: 14%; }
+    .base-3b { left: 12%; top: 48%; }
+
+    .hr-trot-runner {
+      position: absolute;
+      font-size: 1.3rem;
+      transform: translate(-50%, -50%);
+      left: 50%;
+      top: 82%;
+      transition: left 0.65s linear, top 0.65s linear;
+      filter: drop-shadow(0 0 6px #f59e0b);
+      z-index: 5;
+    }
+
+    .hr-trot-status {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #fef08a;
+      letter-spacing: 0.5px;
+    }
+
+    .hr-dismiss-tip {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 10px;
+      opacity: 0.8;
+    }
+
     /* Start Game Splash Overlay */
     .start-overlay {
       position: absolute;
@@ -873,6 +1210,56 @@
           <div class="play-banner-desc" id="bannerDesc">Deep into the center pocket!</div>
         </div>
 
+        <!-- Epic Home Run Celebration Overlay -->
+        <div class="hr-overlay" id="hrOverlay" title="Click or press [Space] to continue">
+          <div class="hr-strobe"></div>
+          <div class="hr-sunburst"></div>
+          
+          <div class="hr-card" id="hrCard">
+            <div class="hr-badge-ribbon" id="hrBadgeRibbon">★ OUTTA THE PARK! ★</div>
+            <div class="hr-title-wrap">
+              <div class="hr-title" id="hrTitle">HOME RUN!</div>
+            </div>
+            <div class="hr-grandslam-banner" id="hrGrandSlamBanner">💥 GRAND SLAM! BASES CLEARED! 💥</div>
+            
+            <div class="hr-stats-row">
+              <div class="hr-stat-pill">
+                <span class="hr-stat-icon">🚀</span>
+                <span class="hr-stat-val" id="hrDistVal">442 FT</span>
+                <span class="hr-stat-lbl">DISTANCE</span>
+              </div>
+              <div class="hr-stat-pill">
+                <span class="hr-stat-icon">⚡</span>
+                <span class="hr-stat-val" id="hrVeloVal">108 MPH</span>
+                <span class="hr-stat-lbl">EXIT VELO</span>
+              </div>
+              <div class="hr-stat-pill">
+                <span class="hr-stat-icon">⚾</span>
+                <span class="hr-stat-val" id="hrRunsVal">+1 RUN</span>
+                <span class="hr-stat-lbl">SCORE</span>
+              </div>
+            </div>
+
+            <div class="hr-batter-spotlight" id="hrBatterSpotlight">
+              <div class="hr-batter-tag" id="hrBatterTag">#44 Hank Aaron</div>
+              <div class="hr-batter-desc" id="hrBatterDesc">Crushes a moonshot dead into centerfield!</div>
+            </div>
+
+            <div class="hr-trot-track" id="hrTrotTrack">
+              <div class="hr-trot-diamond">
+                <div class="hr-trot-node base-hp hit" id="hrBaseHp">HP</div>
+                <div class="hr-trot-node base-1b" id="hrBase1b">1B</div>
+                <div class="hr-trot-node base-2b" id="hrBase2b">2B</div>
+                <div class="hr-trot-node base-3b" id="hrBase3b">3B</div>
+                <div class="hr-trot-runner" id="hrTrotRunner">🏃</div>
+              </div>
+              <div class="hr-trot-status" id="hrTrotStatus">Rounding the bases...</div>
+            </div>
+
+            <div class="hr-dismiss-tip">Press [Space] or Click to Continue</div>
+          </div>
+        </div>
+
         <!-- Start Game Splash Overlay (hidden by default so game starts immediately) -->
         <div class="start-overlay hidden" id="startOverlay">
           <div class="start-card">
@@ -886,6 +1273,7 @@
               <span>💡 <kbd>Space</kbd> Pitch</span>
               <span>⚡ <kbd>F</kbd> Flick Bat</span>
               <span>👋 <kbd>N</kbd> Nudge</span>
+              <span>🏆 <kbd>H</kbd> HR Demo</span>
             </div>
           </div>
         </div>
@@ -899,6 +1287,9 @@
           </button>
           <button class="pitch-btn" id="flickBatBtn" style="background: linear-gradient(135deg, #9333ea, #7e22ce); box-shadow: 0 4px 15px rgba(147, 51, 234, 0.45);" title="Hold to pull back rubberband, release to flick!">
             <span>⚡</span> FLICK BAT [F]
+          </button>
+          <button class="icon-btn" id="hrDemoBtn" style="background: linear-gradient(135deg, #e11d48, #be123c); border-color: #f43f5e; color: #fff; font-weight:700;" title="Trigger Home Run celebration animation [H]">
+            <span>🏆</span> <span id="hrDemoLabel">HR Demo [H]</span>
           </button>
           <button class="icon-btn" id="autoPitchBtn" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); color: #94a3b8; font-weight:700;" title="Toggle automatic continuous pitching">
             <span>🔄</span> <span id="autoPitchLabel">Auto-Pitch: OFF</span>
@@ -1286,6 +1677,174 @@
             osc.stop(curTime + note.d + 0.02);
             curTime += note.d + 0.04;
           });
+        } catch(e) {}
+      }
+
+      // Ballpark Organ Home Run Fanfare
+      playHomeRunFanfare() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const t = this.ctx.currentTime + 0.05;
+          // Ballpark Organ Melodic Opening: G4, C5, E5, G5, high C6
+          const fanfareNotes = [
+            { f: 392.00, d: 0.14, time: 0.00 }, // G4
+            { f: 523.25, d: 0.14, time: 0.14 }, // C5
+            { f: 659.25, d: 0.14, time: 0.28 }, // E5
+            { f: 783.99, d: 0.30, time: 0.42 }, // G5
+            { f: 1046.50, d: 0.55, time: 0.74 } // C6
+          ];
+
+          fanfareNotes.forEach(note => {
+            const startTime = t + note.time;
+            [1, 2].forEach(mult => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = (mult === 1) ? 'sawtooth' : 'triangle';
+              osc.frequency.setValueAtTime(note.f * mult, startTime);
+
+              const vol = (mult === 1) ? 0.20 : 0.12;
+              gain.gain.setValueAtTime(vol, startTime);
+              gain.gain.exponentialRampToValueAtTime(0.001, startTime + note.d);
+
+              const filter = this.ctx.createBiquadFilter();
+              filter.type = 'lowpass';
+              filter.frequency.value = 2400;
+
+              osc.connect(filter);
+              filter.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(startTime);
+              osc.stop(startTime + note.d + 0.02);
+            });
+          });
+
+          // Ballpark Organ celebratory chords
+          const chords = [
+            { freqs: [349.23, 440.00, 523.25, 698.46], time: 1.35, d: 0.36 }, // F Maj (IV)
+            { freqs: [392.00, 493.88, 587.33, 783.99], time: 1.75, d: 0.36 }, // G Maj (V)
+            { freqs: [261.63, 392.00, 523.25, 659.25, 1046.50], time: 2.15, d: 0.95 } // C Maj (I)
+          ];
+
+          chords.forEach(chord => {
+            const chordStart = t + chord.time;
+            chord.freqs.forEach(freq => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(freq, chordStart);
+
+              gain.gain.setValueAtTime(0.10, chordStart);
+              gain.gain.exponentialRampToValueAtTime(0.001, chordStart + chord.d);
+
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(chordStart);
+              osc.stop(chordStart + chord.d + 0.05);
+            });
+          });
+        } catch(e) {}
+      }
+
+      // Ballpark Stadium Crowd Roar / Cheering synthesis
+      playCrowdCheer(duration = 3.6) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const t = this.ctx.currentTime;
+          const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          let lastOut = 0.0;
+          for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            // Filtered brown/pink noise emulation for deep roaring cheer
+            lastOut = (lastOut + 0.02 * white) / 1.02;
+            data[i] = lastOut * 3.6;
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(800, t);
+          filter.frequency.linearRampToValueAtTime(1150, t + 1.2);
+          filter.frequency.linearRampToValueAtTime(750, t + duration);
+          filter.Q.value = 1.3;
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.01, t);
+          gain.gain.linearRampToValueAtTime(0.28, t + 0.5);
+          gain.gain.setValueAtTime(0.28, t + duration - 0.7);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start(t);
+          noise.stop(t + duration);
+        } catch(e) {}
+      }
+
+      // Firework boom and sparkle crackle
+      playFireworkBurst() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const t = this.ctx.currentTime;
+          // Cannon sub-thump
+          const osc = this.ctx.createOscillator();
+          const oscGain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(140, t);
+          osc.frequency.exponentialRampToValueAtTime(32, t + 0.25);
+          oscGain.gain.setValueAtTime(0.3, t);
+          oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          osc.connect(oscGain);
+          oscGain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.26);
+
+          // Crackle burst noise
+          const bufferSize = Math.floor(this.ctx.sampleRate * 0.18);
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.28));
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(600, t);
+          filter.frequency.exponentialRampToValueAtTime(100, t + 0.18);
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.25, t);
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+          noise.connect(filter);
+          filter.connect(noiseGain);
+          noiseGain.connect(this.ctx.destination);
+          noise.start(t);
+        } catch(e) {}
+      }
+
+      // Base Chime when runner touches base (1=1B, 2=2B, 3=3B, 4=Home)
+      playBaseChime(step = 1) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const t = this.ctx.currentTime;
+          const freqs = [587.33, 659.25, 783.99, 1046.50]; // D5, E5, G5, C6
+          const f = freqs[Math.min(3, Math.max(0, step - 1))] || 880;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = (step === 4) ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(f, t);
+          if (step === 4) {
+            osc.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.3);
+          }
+          gain.gain.setValueAtTime(0.25, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.36);
         } catch(e) {}
       }
     }
@@ -2482,6 +3041,15 @@
         };
 
         this.particles = [];
+        this.fireworks = [];
+        this.flashes = [];
+        this.hrCelebrationActive = false;
+        this.hrTrotActive = false;
+        this.hrTrotProgress = 0;
+        this.hrTrotStep = 0;
+        this.hrTrail = [];
+        this.hrTimeoutId = null;
+
         this.exitVeloMPH = 0;
         this.distanceFT = 0;
 
@@ -2673,8 +3241,7 @@
             ? "GRAND SLAM HOME RUN!! BASES CLEARED!!" 
             : `IT'S A HOME RUN! ${runsScoredThisPlay} RUN${runsScoredThisPlay > 1 ? 'S' : ''} SCORED!`;
           
-          this.showBanner("HOME RUN!", announcement);
-          this.createConfetti(100);
+          this.triggerHomeRunAnimation(runsScoredThisPlay, currentBatter, announcement);
           this.advanceBatter();
 
         } else if (resolvedType === 'triple') {
@@ -2762,8 +3329,8 @@
         document.getElementById('announcerText').textContent = announcement;
         this.updateUI();
 
-        // Prepare ball for next play (generous 3.2s pause so player can celebrate and see results!)
-        this.prepareNextPitch(3200);
+        // Prepare ball for next play (generous pause on HR so player can enjoy celebration!)
+        this.prepareNextPitch(resolvedType === 'hr' ? 4400 : 3200);
       }
 
       addRuns(qty) {
@@ -2816,6 +3383,448 @@
         setTimeout(() => banner.classList.remove('show'), 1500);
       }
 
+      /* =========================================================================
+         EPIC HOME RUN CELEBRATION ENGINE
+         ========================================================================= */
+
+      triggerHomeRunAnimation(runsScored, batter, announcement) {
+        this.hrCelebrationActive = true;
+        this.hrTrotActive = true;
+        this.hrTrotProgress = 0;
+        this.hrTrotStep = 0;
+        this.hrTrail = [];
+
+        // 1. Ballpark Audio Fanfare & Cheering
+        sounds.playCrowdCheer(4.2);
+        sounds.playHomeRunFanfare();
+
+        // 2. Cardboard Box Camera Rumble Shake
+        const container = document.getElementById('canvasContainer');
+        if (container) {
+          container.classList.remove('hr-screen-shake');
+          void container.offsetWidth; // Trigger DOM reflow to re-trigger shake
+          container.classList.add('hr-screen-shake');
+        }
+
+        // 3. Outfield fireworks sequence & confetti storm
+        this.createConfetti(120);
+        this.launchFireworksSequence();
+
+        // 4. Populate & show celebration overlay
+        const overlay = document.getElementById('hrOverlay');
+        const isGrandSlam = (runsScored === 4);
+        
+        const titleEl = document.getElementById('hrTitle');
+        if (titleEl) {
+          titleEl.textContent = isGrandSlam ? "GRAND SLAM!" : "HOME RUN!";
+        }
+
+        const grandSlamBanner = document.getElementById('hrGrandSlamBanner');
+        if (grandSlamBanner) {
+          if (isGrandSlam) {
+            grandSlamBanner.classList.add('visible');
+            grandSlamBanner.textContent = "💥 GRAND SLAM!! 4 RUNS SCORED • BASES CLEARED!! 💥";
+          } else {
+            grandSlamBanner.classList.remove('visible');
+          }
+        }
+
+        const dist = this.distanceFT || Math.floor(410 + Math.random() * 55);
+        const velo = this.exitVeloMPH || Math.floor(102 + Math.random() * 15);
+        const distEl = document.getElementById('hrDistVal');
+        const veloEl = document.getElementById('hrVeloVal');
+        const runsEl = document.getElementById('hrRunsVal');
+        if (distEl) distEl.textContent = `${dist} FT`;
+        if (veloEl) veloEl.textContent = `${velo} MPH`;
+        if (runsEl) runsEl.textContent = `+${runsScored} RUN${runsScored > 1 ? 'S' : ''}`;
+
+        const tagEl = document.getElementById('hrBatterTag');
+        const descEl = document.getElementById('hrBatterDesc');
+        if (tagEl) tagEl.textContent = `#${batter.num} ${batter.name} (${batter.pos})`;
+        if (descEl) {
+          descEl.textContent = isGrandSlam 
+            ? "CRUSHES A MAJESTIC GRAND SLAM! ALL 4 BASES CLEARED!" 
+            : `Deep majestic drive into dead center! ${runsScored} run${runsScored > 1 ? 's' : ''} on the board!`;
+        }
+
+        // Reset trot nodes
+        ['hrBaseHp', 'hrBase1b', 'hrBase2b', 'hrBase3b'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.remove('hit');
+        });
+        const hpEl = document.getElementById('hrBaseHp');
+        if (hpEl) hpEl.classList.add('hit');
+        const runnerEl = document.getElementById('hrTrotRunner');
+        if (runnerEl) {
+          runnerEl.style.left = '50%';
+          runnerEl.style.top = '82%';
+        }
+        const statusEl = document.getElementById('hrTrotStatus');
+        if (statusEl) statusEl.textContent = "Blast into the seats! Rounding the bases...";
+
+        if (overlay) overlay.classList.add('active');
+
+        // 5. Auto dismiss after celebration duration
+        if (this.hrTimeoutId) clearTimeout(this.hrTimeoutId);
+        this.hrTimeoutId = setTimeout(() => {
+          this.dismissHomeRunAnimation();
+        }, 4200);
+      }
+
+      dismissHomeRunAnimation() {
+        if (!this.hrCelebrationActive) return;
+        this.hrCelebrationActive = false;
+        this.hrTrotActive = false;
+        const overlay = document.getElementById('hrOverlay');
+        if (overlay) overlay.classList.remove('active');
+        const container = document.getElementById('canvasContainer');
+        if (container) container.classList.remove('hr-screen-shake');
+        if (this.hrTimeoutId) {
+          clearTimeout(this.hrTimeoutId);
+          this.hrTimeoutId = null;
+        }
+      }
+
+      testHomeRun() {
+        sounds.init();
+        const currentBatter = BATTING_LINEUP[this.batterIndex];
+        this.exitVeloMPH = Math.floor(104 + Math.random() * 12);
+        this.distanceFT = Math.floor(420 + Math.random() * 45);
+        document.getElementById('statVelo').textContent = `${this.exitVeloMPH} MPH`;
+        document.getElementById('liveRadar').textContent = `${this.exitVeloMPH} MPH`;
+        document.getElementById('statDist').textContent = `${this.distanceFT} FT`;
+        document.getElementById('statPlay').textContent = "HOME RUN!";
+
+        // Score 1-4 runs based on runners currently on base (or 1 if empty)
+        const runsScoredThisPlay = 1 + this.runners.filter(Boolean).length;
+        this.runners = [false, false, false];
+        this.homeHits++;
+        this.teamHits++;
+        this.teamAtBats++;
+        currentBatter.h++;
+        currentBatter.ab++;
+        this.addRuns(runsScoredThisPlay);
+        this.strikes = 0;
+        this.ballsCount = 0;
+
+        const announcement = (runsScoredThisPlay === 4)
+          ? "GRAND SLAM HOME RUN!! BASES CLEARED!!"
+          : `IT'S A HOME RUN! ${runsScoredThisPlay} RUN${runsScoredThisPlay > 1 ? 'S' : ''} SCORED!`;
+
+        document.getElementById('announcerText').textContent = announcement;
+        this.updateUI();
+
+        this.triggerHomeRunAnimation(runsScoredThisPlay, currentBatter, announcement);
+        this.advanceBatter();
+        this.prepareNextPitch(4400);
+      }
+
+      launchFireworksSequence() {
+        const colors = ['#f43f5e', '#38bdf8', '#eab308', '#a855f7', '#22c55e', '#ffffff', '#fb923c'];
+        const launches = [
+          { delay: 100, x: 280, targetY: 260, color: colors[0] },
+          { delay: 420, x: 620, targetY: 240, color: colors[1] },
+          { delay: 800, x: 450, targetY: 195, color: colors[2] },
+          { delay: 1150, x: 220, targetY: 270, color: colors[3] },
+          { delay: 1500, x: 680, targetY: 230, color: colors[4] },
+          { delay: 1900, x: 380, targetY: 210, color: colors[2] },
+          { delay: 2300, x: 520, targetY: 200, color: colors[6] }
+        ];
+
+        launches.forEach(l => {
+          setTimeout(() => {
+            if (this.hrCelebrationActive) {
+              this.launchFirework(l.x, 780, l.targetY, l.color);
+            }
+          }, l.delay);
+        });
+      }
+
+      launchFirework(startX, startY, targetY, color) {
+        this.fireworks.push({
+          x: startX,
+          y: startY,
+          vx: (Math.random() - 0.5) * 60,
+          vy: -680 - Math.random() * 120,
+          targetY: targetY,
+          color: color,
+          trail: []
+        });
+      }
+
+      explodeFirework(x, y, color) {
+        sounds.playFireworkBurst();
+        // Camera flash flare on field
+        this.flashes.push({
+          x: x,
+          y: y,
+          radius: 14,
+          maxRadius: 120,
+          color: color,
+          life: 1.0
+        });
+
+        // 50 sparkling fireworks particles
+        for (let i = 0; i < 50; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 75 + Math.random() * 260;
+          this.particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: Math.random() * 5 + 3,
+            color: [color, '#ffffff', '#ffd700', '#fef08a'][Math.floor(Math.random() * 4)],
+            life: 1.0,
+            decay: 0.55 + Math.random() * 0.45,
+            gravity: 240,
+            isSpark: true,
+            rot: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 8
+          });
+        }
+      }
+
+      createBaseSparkBurst(x, y, color, count = 25) {
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 60 + Math.random() * 180;
+          this.particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 60,
+            size: Math.random() * 5 + 2.5,
+            color: color,
+            life: 0.9,
+            decay: 0.9,
+            gravity: 280,
+            isSpark: true,
+            rot: 0,
+            vRot: 0
+          });
+        }
+      }
+
+      updateFireworks(dt) {
+        for (let i = this.fireworks.length - 1; i >= 0; i--) {
+          const fw = this.fireworks[i];
+          fw.trail.push({ x: fw.x, y: fw.y });
+          if (fw.trail.length > 8) fw.trail.shift();
+          fw.x += fw.vx * dt;
+          fw.y += fw.vy * dt;
+          fw.vy += 320 * dt; // gravity deceleration
+
+          if (fw.y <= fw.targetY || fw.vy >= -40) {
+            this.explodeFirework(fw.x, fw.y, fw.color);
+            this.fireworks.splice(i, 1);
+          }
+        }
+
+        // Update flash flares
+        for (let i = this.flashes.length - 1; i >= 0; i--) {
+          const fl = this.flashes[i];
+          fl.life -= dt * 2.8;
+          fl.radius += (fl.maxRadius - fl.radius) * 12 * dt;
+          if (fl.life <= 0) {
+            this.flashes.splice(i, 1);
+          }
+        }
+      }
+
+      drawFireworks(ctx) {
+        // Draw flash halos
+        for (const fl of this.flashes) {
+          ctx.save();
+          const grad = ctx.createRadialGradient(fl.x, fl.y, 0, fl.x, fl.y, fl.radius);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${fl.life * 0.85})`);
+          grad.addColorStop(0.5, `${fl.color}`);
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(fl.x, fl.y, fl.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Draw ascending rockets
+        for (const fw of this.fireworks) {
+          ctx.save();
+          // Trail
+          for (let i = 0; i < fw.trail.length; i++) {
+            const pt = fw.trail[i];
+            const a = (i / fw.trail.length) * 0.7;
+            ctx.fillStyle = `rgba(254, 240, 138, ${a})`;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 2 + i * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          // Rocket head
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = fw.color;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(fw.x, fw.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      updateHomeRunTrot(dt) {
+        if (!this.hrTrotActive) return;
+        // Trot completes around the diamond over 3.2 seconds
+        this.hrTrotProgress += dt / 3.2;
+
+        const p = this.hrTrotProgress;
+        const runnerEl = document.getElementById('hrTrotRunner');
+        const statusEl = document.getElementById('hrTrotStatus');
+
+        // Milestone checkpoints
+        if (p >= 0.25 && this.hrTrotStep < 1) {
+          this.hrTrotStep = 1;
+          sounds.playBaseChime(1);
+          const b1 = document.getElementById('hrBase1b');
+          if (b1) b1.classList.add('hit');
+          const n1 = document.getElementById('node1st');
+          if (n1) n1.classList.add('active-runner');
+          if (statusEl) statusEl.textContent = "Safe at 1st! Digging for 2nd...";
+          this.createBaseSparkBurst(BASE_1ST.x, BASE_1ST.y, '#f59e0b');
+        } else if (p >= 0.50 && this.hrTrotStep < 2) {
+          this.hrTrotStep = 2;
+          sounds.playBaseChime(2);
+          const b2 = document.getElementById('hrBase2b');
+          if (b2) b2.classList.add('hit');
+          const n2 = document.getElementById('node2nd');
+          if (n2) n2.classList.add('active-runner');
+          if (statusEl) statusEl.textContent = "Rounding 2nd! Headed for 3rd...";
+          this.createBaseSparkBurst(BASE_2ND.x, BASE_2ND.y, '#f59e0b');
+        } else if (p >= 0.75 && this.hrTrotStep < 3) {
+          this.hrTrotStep = 3;
+          sounds.playBaseChime(3);
+          const b3 = document.getElementById('hrBase3b');
+          if (b3) b3.classList.add('hit');
+          const n3 = document.getElementById('node3rd');
+          if (n3) n3.classList.add('active-runner');
+          if (statusEl) statusEl.textContent = "Rounding 3rd! Heading for HOME!";
+          this.createBaseSparkBurst(BASE_3RD.x, BASE_3RD.y, '#f59e0b');
+        } else if (p >= 1.00 && this.hrTrotStep < 4) {
+          this.hrTrotStep = 4;
+          sounds.playBaseChime(4);
+          const bhp = document.getElementById('hrBaseHp');
+          if (bhp) bhp.classList.add('hit');
+          const nhp = document.getElementById('nodeHome');
+          if (nhp) nhp.classList.add('active-runner');
+          if (statusEl) statusEl.textContent = "TOUCHES HOME PLATE! SAFE! 🏆";
+          this.createBaseSparkBurst(HOME_PLATE.x, HOME_PLATE.y, '#ffd700', 40);
+          this.createConfetti(60);
+        }
+
+        // Mini Diamond runner icon interpolation in overlay
+        if (runnerEl) {
+          let rx, ry;
+          if (p < 0.25) {
+            const u = p / 0.25;
+            rx = 50 + (88 - 50) * u;
+            ry = 82 + (48 - 82) * u;
+          } else if (p < 0.50) {
+            const u = (p - 0.25) / 0.25;
+            rx = 88 + (50 - 88) * u;
+            ry = 48 + (14 - 48) * u;
+          } else if (p < 0.75) {
+            const u = (p - 0.50) / 0.25;
+            rx = 50 + (12 - 50) * u;
+            ry = 14 + (48 - 14) * u;
+          } else if (p < 1.0) {
+            const u = (p - 0.75) / 0.25;
+            rx = 12 + (50 - 12) * u;
+            ry = 48 + (82 - 48) * u;
+          } else {
+            rx = 50;
+            ry = 82;
+          }
+          runnerEl.style.left = `${rx.toFixed(1)}%`;
+          runnerEl.style.top = `${ry.toFixed(1)}%`;
+        }
+
+        if (p >= 1.15) {
+          this.hrTrotActive = false;
+        }
+      }
+
+      drawHomeRunTrot(ctx) {
+        if (!this.hrTrotActive) return;
+        const p = Math.min(1.0, this.hrTrotProgress);
+        let curX, curY;
+        if (p < 0.25) {
+          const u = p / 0.25;
+          curX = HOME_PLATE.x + (BASE_1ST.x - HOME_PLATE.x) * u;
+          curY = HOME_PLATE.y + (BASE_1ST.y - HOME_PLATE.y) * u;
+        } else if (p < 0.50) {
+          const u = (p - 0.25) / 0.25;
+          curX = BASE_1ST.x + (BASE_2ND.x - BASE_1ST.x) * u;
+          curY = BASE_1ST.y + (BASE_2ND.y - BASE_1ST.y) * u;
+        } else if (p < 0.75) {
+          const u = (p - 0.50) / 0.25;
+          curX = BASE_2ND.x + (BASE_3RD.x - BASE_2ND.x) * u;
+          curY = BASE_2ND.y + (BASE_3RD.y - BASE_2ND.y) * u;
+        } else {
+          const u = (p - 0.75) / 0.25;
+          curX = BASE_3RD.x + (HOME_PLATE.x - BASE_3RD.x) * u;
+          curY = BASE_3RD.y + (HOME_PLATE.y - BASE_3RD.y) * u;
+        }
+
+        // Add to breadcrumb trail
+        this.hrTrail.push({ x: curX, y: curY });
+        if (this.hrTrail.length > 20) this.hrTrail.shift();
+
+        // Draw glowing gold basepath breadcrumbs
+        ctx.save();
+        for (let i = 0; i < this.hrTrail.length; i++) {
+          const pt = this.hrTrail[i];
+          const alpha = (i / this.hrTrail.length) * 0.75;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 4 + i * 0.35, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(245, 158, 11, ${alpha})`;
+          ctx.shadowColor = '#f59e0b';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // Draw runner badge on field
+        ctx.save();
+        ctx.translate(curX, curY);
+
+        // Pulse ring
+        const pulse = (Date.now() % 600) / 600;
+        ctx.beginPath();
+        ctx.arc(0, 0, 16 + pulse * 14, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(248, 194, 51, ${1 - pulse})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Runner Token
+        ctx.beginPath();
+        ctx.arc(0, 0, 15, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e293b';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffd700';
+        ctx.stroke();
+
+        // Batter uniform number
+        const currentBatter = BATTING_LINEUP[this.batterIndex] || { num: '44' };
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = '#fef08a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`#${currentBatter.num}`, 0, 1);
+
+        ctx.restore();
+      }
+
       createConfetti(count = 60) {
         for (let i = 0; i < count; i++) {
           this.particles.push({
@@ -2837,8 +3846,11 @@
           const p = this.particles[i];
           p.x += p.vx * dt;
           p.y += p.vy * dt;
+          if (p.gravity) {
+            p.vy += p.gravity * dt;
+          }
           p.rot += p.vRot * dt;
-          p.life -= dt * 0.7;
+          p.life -= dt * (p.decay || 0.7);
           if (p.life <= 0) {
             this.particles.splice(i, 1);
           }
@@ -2853,7 +3865,22 @@
           ctx.rotate(p.rot);
           ctx.fillStyle = p.color;
           ctx.globalAlpha = Math.max(0, p.life);
-          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+
+          if (p.isSpark) {
+            // Sparkling diamond star
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size);
+            ctx.lineTo(p.size * 0.4, 0);
+            ctx.lineTo(0, p.size);
+            ctx.lineTo(-p.size * 0.4, 0);
+            ctx.closePath();
+            ctx.fill();
+          } else {
+            // Confetti rectangle
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          }
           ctx.restore();
         }
         ctx.restore();
@@ -3405,14 +4432,24 @@
     // Keyboard controls
     window.addEventListener('keydown', (e) => {
       sounds.init();
+      if (game.hrCelebrationActive) {
+        if (e.code === 'Space' || e.code === 'KeyF' || e.code === 'Enter') {
+          e.preventDefault();
+          game.dismissHomeRunAnimation();
+          return;
+        }
+      }
       if (e.code === 'Space') {
         e.preventDefault();
         triggerPitch();
+      } else if (e.code === 'KeyH') {
+        e.preventDefault();
+        game.testHomeRun();
       } else if (e.code === 'KeyN') {
         nudgeBox();
       } else if (e.code === 'KeyR') {
         game.ball.resetAtTee();
-      } else if (e.code === 'KeyB' || e.code === 'KeyH') {
+      } else if (e.code === 'KeyB') {
         toggleBatterHand();
       } else if (e.code === 'ArrowDown' || e.code === 'KeyS' || e.code === 'KeyF') {
         // Pull back bat via key (Hold to pull, release to flick)
@@ -3520,6 +4557,21 @@
     document.getElementById('batterHandBtn').addEventListener('click', toggleBatterHand);
     document.getElementById('currentBatterCard').addEventListener('click', toggleBatterHand);
     document.getElementById('nudgeBtn').addEventListener('click', nudgeBox);
+
+    const hrDemoBtn = document.getElementById('hrDemoBtn');
+    if (hrDemoBtn) {
+      hrDemoBtn.addEventListener('click', () => {
+        sounds.init();
+        game.testHomeRun();
+      });
+    }
+
+    const hrOverlay = document.getElementById('hrOverlay');
+    if (hrOverlay) {
+      hrOverlay.addEventListener('click', () => {
+        game.dismissHomeRunAnimation();
+      });
+    }
 
     // Flick Bat button (Hold to pull back rubberband, release to snap!)
     const flickBtn = document.getElementById('flickBatBtn');
@@ -3650,6 +4702,8 @@
       }
       game.ball.postUpdate(dt);
       game.updateParticles(dt);
+      game.updateFireworks(dt);
+      game.updateHomeRunTrot(dt);
 
       // Render Scene
       ctx.clearRect(0, 0, BOARD_SIZE, BOARD_SIZE);
@@ -3669,7 +4723,15 @@
       // 5. Rubberband Bat mechanism
       game.bat.draw(ctx);
 
-      // 6. Celebration confetti particles
+      // 6. Home Run Diamond Trot (if active)
+      if (game.hrTrotActive) {
+        game.drawHomeRunTrot(ctx);
+      }
+
+      // 7. Outfield Fireworks & Flash Flares
+      game.drawFireworks(ctx);
+
+      // 8. Celebration confetti particles
       game.drawParticles(ctx);
 
       requestAnimationFrame(gameLoop);
